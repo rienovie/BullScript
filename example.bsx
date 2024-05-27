@@ -1,0 +1,45 @@
+#build
+
+//predetermined build variables examples
+build = debug;          // release etc.
+platform = linux;       // might be able to have multiple
+appName = helloWorld;
+
+#end build
+
+/* comment block */
+
+// all programs start at the _entry function, will define later how parameters get passed
+_entry() {
+    print("Hello World!");
+    iAnswer = 5 + 12;
+    print(iAnswer);
+}
+
+_print(sValueToPrint) {
+    /*whatever asm code here
+        this will be a builtin function
+    */
+}
+
+//return type
+i_getRandIntValue() {
+    // this will create a new variable called iSomeIntValue and call the Random Func
+    return iSomeIntValue.Random(0,5); //will be a built-in function min max
+}
+
+//unnamed function, possibly lamda
+_() { }
+
+//unnamed function that returns int 5
+i_() { return 5; }
+
+//c means custom or class
+tfd : fetchData {
+    // type, class, custom, struct
+}
+
+//creates new cfd and returns it
+tfd_fetchDataFunction() {
+    return cfdOutput;
+}

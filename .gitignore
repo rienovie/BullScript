@@ -1,0 +1,5 @@
+*.o
+ASM/test
+BullScript_CPP_Compiler/build
+*.kdev4
+main
