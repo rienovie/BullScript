@@ -55,20 +55,22 @@ So anything pointing to that location is read to be NULL
 If a function already exists it'll overwrite it as long as it's allowed
 
 Using multiple files all of these are searched & added automatically:
-    All .bs files in the BullScript install directory (basically the default stuffs)
+    All .bs files in the BullScript install directory (basically the default stuff)
     All .bs files in the directory of the entry BullScript
     All .bs files in all sub directories of the entry BullScript directory
     Files you wish to include in the program must be in a subdirectory (maybe will change?)
 
 Will probably use extentions:
     .bs - basic bullScript extention
-        all files can be this, but others simply structure
+        all files can be this, but others simplify structure
     .bsx (not required) - build / enforce / warn
         you could have say a linux.bsx, windows.bsx, mac.bsx, linux_debug.bsx, etc
     .bse (not required)- entry script
-        I think this would make it easy to teach someone else to code in general. The entire file is considered the _entry() function and not having to worry about the build instructions and enforce and other things to distract from having the only thing the student sees is something like:
-            int x = 5;
+        I think this would make it easy to teach someone else to code in general.
+        The entire file is considered the _entry() function and not having to worry about the build instructions or enforce and other things to distract from having the only thing the student sees is something like:
+            var x = 5;
             return x;
+        This is a valid program that would run and exit with code 5. This makes it really easy to explain concepts like variables etc to someone who has never seen code before without having the overwhelming thing that is what this same program would look like in c.
 
 Built-In Types:
     bool
