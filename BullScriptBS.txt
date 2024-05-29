@@ -4,15 +4,39 @@ I want to create a language that is both squishy and firm.
 I want it to be simple to learn in, but becomes more useful the more you know.
 As you become a better programmer, it'll be with you every step of the way.
 
-Variables will be created by lowercase letters as a prefix to the name of the variable:
+Everything is either a type or function.
+All functions are within a type.
+Functions declared outside of a type are considered part of the "global" type.
+    ie if you have _someFunc() {} and you want to call it you can either write:
+        someFunc() or global.someFunc()
+    These are consider equivalent.
+    entry() is also equivalent to global.entry()
 
-iVarName    // resizing int (note later)
-i8VarName   // byte int
-i16VarName  // 2 byte int
-bVarName    // bool
-dVarName    // resizing double (note later)
+Also I'm not sure if this is possible, but I want you to be able to write direct ASM functions if possible.
+ie:
+    _someASMFunc() -> int : ASM {
+        ;asm code here
+    }
 
-Resizing variables are made to be larger than the value itself.
+Once I have a better understanding of ASM I'll revisit this idea.
+Worst case I want to have at least a simplified ASM that would be the attribute bsASM
+
+There is three levels to types:
+
+    lvl 1: inferred (var)
+        -automatically detect what the variable is
+        -convert freely between each level
+            bool -> int -> float -> list -> array
+        -will mostly be used for beginners and templates
+
+    lvl 2: resizing (int, float, etc)
+        explaned below
+
+    lvl 3: explict (i8, i16, i8u, i16u, etc)
+        -only allocates exactly what is needed
+        -strong type safety
+
+Resizing types are made to be larger than the value itself.
 Before modifing the value, checks at the location if there is a redirect to another memory spot.
 Also if modifing the number would go out of bounds of the value:
     mark redirect
@@ -22,17 +46,13 @@ Also if modifing the number would go out of bounds of the value:
 This is not the most efficient but should make it easy for quickly creating / beginners
 
 All values are by reference
+Maybe will have an attribute like "onlyCopy"
 
-If a variable is already defined it'll change/overwrite it.
-Otherwise it creates it within scope.
 Values are defaulted to NULL
 I think NULL will be defined as a specific memory location at program start
 So anything pointing to that location is read to be NULL
 
-If a function already exists it'll overwrite it
-
-To declare a const variable make all letters except the type/class capital i.e. iTHISISACONSTVALUE = 3;
-Const values must be defined when declared
+If a function already exists it'll overwrite it as long as it's allowed
 
 Using multiple files all of these are searched & added automatically:
     All .bs files in the BullScript install directory (basically the default stuffs)
@@ -40,94 +60,31 @@ Using multiple files all of these are searched & added automatically:
     All .bs files in all sub directories of the entry BullScript directory
     Files you wish to include in the program must be in a subdirectory (maybe will change?)
 
+Will probably use extentions:
+    .bs - basic bullScript extention
+        all files can be this, but others simply structure
+    .bsx (not required) - build / enforce / warn
+        you could have say a linux.bsx, windows.bsx, mac.bsx, linux_debug.bsx, etc
+    .bse (not required)- entry script
+        I think this would make it easy to teach someone else to code in general. The entire file is considered the _entry() function and not having to worry about the build instructions and enforce and other things to distract from having the only thing the student sees is something like:
+            int x = 5;
+            return x;
 
 Built-In Types:
-    b (bool)
-    i (int)
-    f (float)
-    e (enum)
-    c (char)
-    s (string)
-    m (map)
-    l (list)
-    a (array)
-    q (queue)
-    dq (dequeue)
-    st (stack)
-    t (type / class / custom)
-    p (pointer)
-    fp (function pointer)
-    n (NULL) //TODO describe how this will be used as templates
-
-
-An example:
-
-
-    _entry() {
-        tstFirstType;          // creates calling blank constructor
-        tstSecondType = 12;    // creates calling int input constructor
-        tstThirdType[];        // creates calling blank constructor
-        tstFourthType[8];      // creates calling int input constructor
-
-        tstFirstType.printIntValue();  // would print 5
-        tstSecondType.printIntValue(); // would print 12
-        tstThirdType.printIntValue();  // would print 5
-        tstFourthType.printIntValue(); // would print 8
-
-        tstFirstType.setValue(2);
-        tstFirstType.printIntValue();  // would print 2
-
-        pSecond = &tstSecondType; //TODO
-
-    }
-
-    // : is used to alias the type for lsp purposes
-    // so when typing "someType" this type would show up hopefully
-    tst : someType {
-
-        // this includes all of the i type, the someFunction from d, and the f blank constructor
-        // you would be able to call tstFirstType.someFunction()
-        inherit { i, d.someFunction() , f.f[] }
-
-        // namespace-like functionality doesn't need an object for functions
-        // only single value for all instances of this and inherited typees
-        static {
-            iStaticVariable = 9;
-            iCONSTVALUE = 11;       // all caps for variable name makes variable const
-        }
-
-        // accessible from anywhere and all inherited
-        public {
-            tst[_] { return iSomeInt;  }    // get
-            tst[=iI] { setValue(iI); }   // set, variable can be named anything
-
-            tst[+iV] { addValue(iV); }      // operator set, variable can be named anything
-            tst[] { iSomeInt = 5; }         // blank constructor
-            tst[iX] { iSomeInt = iX; }      // int input constructor, iX is const
-            ~tst {}                         // destructor
-
-            _printIntValue() {
-                iScopedValue = iSomeInt;    // will be deleted after function
-                print(iScopedValue);
-            }
-
-            _setValue(iNewValue) {
-                iSomeInt = iNewValue;
-            }
-
-            _addValue(iValue) {
-                iSomeInt += iValue;
-            }
-        }
-
-        // only accessible by this type or inherited
-        private {
-            iSomeInt;   //creates variable with 0 value as default or maybe undefined not sure yet
-        }
-
-        //only accessible by this type and is not accessible by inherited
-        protected {
-            fNotInheritedVariable = 0.5;
-        }
-    }
-
+    bool
+    int
+    float
+    enum
+    char
+    string
+    map
+    list
+    array
+    queue
+    dequeue
+    stack
+    type
+    ptr
+    fptr
+    var //TODO describe how this will be used as templates
+    null

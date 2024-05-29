@@ -1,0 +1,160 @@
+// all projects have a build section with all build instructions
+#build
+
+//predetermined build variables examples
+build = debug;          // release etc.
+
+platform = linux;
+
+appName = Hello World; // probably the final name for the output executable
+
+entryByFile = "startHere.bsx" (var args);
+/*
+all programs start with the _entry() function
+can specify a seperate file that would be considered the _entry function
+quotes is the file and the () will contain the cmd line arguments
+the args in this case are any variable that'll be auto detected, if multiple will be array
+*/
+
+#end build
+
+// this section can be in any file and will enforce for only that file
+// not sure if will enforce outside that file for things called from that file
+// will enforce project wide if put inside the build file
+#enforce
+
+// disable will probably have a list of predetermined options
+
+// gives compile error if var is used to create a variable
+// does NOT disable var when used as parameters or templates
+// maybe will change the exact behavior *shrug*
+disable = var;
+
+// give compile error if built-in types are not explictly sized
+// int should be i8, i16, i8u, i64u
+disable = resizeVars;
+
+// default function override behavior is overridable
+// can specify if the specific function is overridable or noOveride
+overrideDefault = noOverride;
+
+#end enforce
+
+// this section would have warnings that would output to the compile log
+// they would not prevent compliation
+#warn
+
+//not sure the syntax here yet
+
+#end warn
+
+/* comment block */
+
+// all programs start at the _entry function
+_entry(var args) -> i8u {
+    print("Hello World!");
+    int answer = 5 + 12;
+    print(answer);
+}
+
+// functions have implied "-> null" after parameters
+// functions will have implied "-> var" if value is returned but not specified
+_print(string toPrint) {
+    /*whatever asm code here
+        this will be a builtin function
+    */
+}
+
+// functions and types have attributes defined with :
+_getRandIntValue() -> int : noOverride, protected {
+    return randomInt(0,5);
+}
+
+//unnamed function, possibly lamda
+_() { }
+
+//unnamed function that returns int 5
+_() -> int { return 5; }
+
+type fetchData {
+    // this includes everything in int type, the blank float contructor, and the _length() function from string
+    // this would probably not work, I'm not sure how the blank contructor for float would mesh with this but meh
+    inherit { int, float.float[], string.length() }
+
+    // namespace-like functionality doesn't need an instantiation for functions
+    // variables must be defined at declaration
+    // variables also will only have a single value for all instances of this and any types that inherit
+    static {
+        // property cannot be inherited
+        int staticVariable : protected = 9;
+
+        const int SOMEVARIABLE = 11;
+    }
+
+    // all getters, setters, constructs, and destruct must be public
+    public {
+        get[var] : noOverride {
+            switch typeOf(var) {
+                case (int.any()) {
+                    return privateIntValue;
+                }
+                case (string.any()) {
+                    return privateStringValue;
+                }
+                case () {
+                    print("Type: ",typeOf(var)," is not defined in getter!");
+                    return null;
+                }
+            }
+        }
+        set[int value] {
+            privateIntValue = value;
+        }
+        set[int value, string something] {
+            privateIntValue = value;
+            privateStringValue = something;
+        }
+        
+        // this would override the inherited float blank constructor
+        // why would you do this? I don't know, but I think you get the idea
+        construct[] {
+            privateIntValue = 0;
+            privateStringValue = "Hi";
+        }
+
+        // default override setting makes this implied but this makes it overridable if noOverride is enforced
+        construct[int value] : overridable {
+            this = value;
+        }
+
+        construct[string value] : noOverride {
+            privateStringValue = value;
+        }
+
+        construct[int value, string something] {
+            this = [value, something];
+        }
+
+        destruct[] {
+            someFunction();
+        }
+
+    }
+
+    // only accessible by this type and is inherited
+    private {
+        i8 privateIntValue = 5;
+        string privateStringValue = "Hello";
+    }
+
+    // only accessible by this specific type and not in inherited types
+    protected {
+        var notInheritedVariable;
+    }
+
+    // if not put inside a section it defaults to public
+    // can override default behavor in an #enforce
+    _someFunction() -> int {
+        return 0;
+    }
+}

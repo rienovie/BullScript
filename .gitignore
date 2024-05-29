@@ -1,5 +1,6 @@
 *.o
 ASM/test
 BullScript_CPP_Compiler/build
+BullScript_CPP_Compiler/.cache
 *.kdev4
 main
