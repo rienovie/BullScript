@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
 
 set(SOURCES
     main.cpp
-    util.cpp
+    Util/util.cpp
 )
 
 add_executable(bullscript_cpp_compiler ${SOURCES})

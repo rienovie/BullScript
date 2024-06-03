@@ -1,0 +1,3 @@
+[submodule "BullScript_CPP_Compiler/Util"]
+	path = BullScript_CPP_Compiler/Util
+	url = git@github.com:rienovie/CppUtil.git
