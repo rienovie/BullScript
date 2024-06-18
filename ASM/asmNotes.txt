@@ -1,0 +1,18 @@
+mov -> move
+cmp -> compare
+jmp -> jump
+
+int -> interrupt (probably won't use)
+syscall -> use instead of int
+
+jz -> jump if zero (same as equals)
+je -> jump if equal
+(will add more later)
+
+inc -> increment by one byte
+
+db -> defineByte (1 byte)
+dw -> defineWord (2 bytes)
+dd -> defineDoubleWord (4 bytes)
+dq -> defineQuadWord (8 bytes)
+dt -> defineTenBytes (10 bytes)

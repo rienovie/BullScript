@@ -1,11 +1,10 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-    echo "Dude... I need an input..."
-    exit 1
+    INPUT="ASM/test.asm"
+else
+    INPUT=$1
 fi
-
-INPUT=$1
 
 nasm -felf64 "$INPUT"
 

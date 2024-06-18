@@ -78,8 +78,8 @@ _() -> int { return 5; }
 
 type fetchData {
     // this includes everything in int type, the blank float contructor, and the _length() function from string
-    // this would probably not work, I'm not sure how the blank contructor for float would mesh with this but meh
-    inherit { int, float.float[], string.length() }
+    // the blank float construct will override the int blank construct because it's listed after the int inherit
+    inherit { int, float.construct[], string.length() }
 
     // namespace-like functionality doesn't need an instantiation for functions
     // variables must be defined at declaration
@@ -87,14 +87,18 @@ type fetchData {
     static {
         // property cannot be inherited
         int staticVariable : protected = 9;
+        //could also be written like
+        int staticVariable[9] : protected;
+        //or
+        int staticVariable[] : protected = 9;
 
         const int SOMEVARIABLE = 11;
     }
 
     // all getters, setters, constructs, and destruct must be public
     public {
-        get[var] : noOverride {
-            switch typeOf(var) {
+        get[var] : noOverride, noInherit {
+            switch (typeOf(var)) {
                 case (int.any()) {
                     return privateIntValue;
                 }

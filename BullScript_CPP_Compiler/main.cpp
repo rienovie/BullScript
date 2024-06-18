@@ -1,4 +1,4 @@
-#include <iostream>
+#include "main.hpp"
 #include "Util/util.hpp"
 #include <string>
 
@@ -12,3 +12,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
