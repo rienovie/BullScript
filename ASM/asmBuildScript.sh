@@ -26,12 +26,13 @@ fi
 OUTPUT=$?
 
 echo "Compiled with code ${OUTPUT}."
-echo "Attempting to run..."
+echo $'Attempting to run...\n\n'
 
 ${BASENAME}
 
 OUTPUT=$?
 
+echo $'\n'
 echo "Program exited with code ${OUTPUT}."
 
 exit 0

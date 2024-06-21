@@ -16,3 +16,15 @@ dw -> defineWord (2 bytes)
 dd -> defineDoubleWord (4 bytes)
 dq -> defineQuadWord (8 bytes)
 dt -> defineTenBytes (10 bytes)
+
+
+so from what I can tell, the rax, rdi, rsi, rdx are used as inputs for the syscalls but all the tutorials I'm seeing are using them freely for counting etc
+this feels a little weird to me as well as asm is really hard to follow and feels very much like the wild-west of languages (which honestly feels really cool)
+so I'll try to organize how I'm thinking about it:
+
+_funcName -> same as bs standard to keep things consistent
+l_ -> label
+
+r15, r14, r13, r12 -> function inputs
+r9, r10, r11 -> play values (modify and use freely)
+r8 -> function return

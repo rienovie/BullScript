@@ -1,24 +1,38 @@
 global _start
 
     section .data
-message: db "Hello world!", 10, 0ah
-fNum: db 3.567e20
+message: db "Hello great world!", 10, 0
 
     section .text
+
+_end:
+    mov rax, 60
+    xor rdi, rdi
+    syscall
+
+_countChars:
+    
+    mov r8, r15
+
+    l_nextChar:
+    cmp byte [r8], 0
+    je l_finsh
+    inc r8
+    jmp l_nextChar
+
+    l_finsh:
+    sub r8, r15
+    ret
 
 _start:
     mov rax, 1
     mov rdi, 1
     mov rsi, message
-    mov rdx, 13
+    
+    mov r15, message
+    call _countChars
+    mov rdx, r8
+
     syscall
 
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, fNum ; need to look up conversion
-    mov rdx, 5
-    syscall
-
-    mov rax, 60
-    xor rdi, rdi
-    syscall
+    jmp _end
