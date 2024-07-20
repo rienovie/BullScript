@@ -1,11 +1,13 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-    INPUT="ASM/test.asm"
+    echo "No input file given!"
+    exit 1
 else
     INPUT=$1
 fi
 
+#Nasm compile step
 nasm -felf64 "$INPUT"
 
 if [ $? -ne 0 ]; then
