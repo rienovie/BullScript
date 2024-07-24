@@ -1,5 +1,5 @@
 // all projects have a build section with all build instructions
-#build
+##build
 
 //predetermined build variables examples
 build = debug;          // release etc.
@@ -16,12 +16,12 @@ quotes is the file and the () will contain the cmd line arguments
 the args in this case are any variable that'll be auto detected, if multiple will be array
 */
 
-#end build
+##end build
 
 // this section can be in any file and will enforce for only that file
 // not sure if will enforce outside that file for things called from that file
 // will enforce project wide if put inside the build file
-#enforce
+##enforce
 
 // disable will probably have a list of predetermined options
 
@@ -38,15 +38,15 @@ disable = resizeVars;
 // can specify if the specific function is overridable or noOveride
 overrideDefault = noOverride;
 
-#end enforce
+##end enforce
 
 // this section would have warnings that would output to the compile log
 // they would not prevent compliation
-#warn
+##warn
 
 //not sure the syntax here yet
 
-#end warn
+##end warn
 
 /* comment block */
 
@@ -57,10 +57,10 @@ _entry(var args) -> i8u {
     print(answer);
 }
 
-// functions have implied "-> null" after parameters
+// functions have implied "-> void" after parameters
 // functions will have implied "-> var" if value is returned but not specified
 _print(string toPrint) {
-    /*whatever asm code here
+    /*whatever basm code here
         this will be a builtin function
     */
 }
@@ -75,6 +75,8 @@ _() { }
 
 //unnamed function that returns int 5
 _() -> int { return 5; }
+//could also be written this way with implied int
+_() { return 5; }
 
 type fetchData {
     // this includes everything in int type, the blank float contructor, and the _length() function from string
@@ -93,6 +95,8 @@ type fetchData {
         int staticVariable[] : protected = 9;
 
         const int SOMEVARIABLE = 11;
+        //this would be equivalent to
+        const ( int SOMEVARIABLE = 11 );
     }
 
     // all getters, setters, constructs, and destruct must be public
@@ -157,7 +161,7 @@ type fetchData {
     }
 
     // if not put inside a section it defaults to public
-    // can override default behavor in an #enforce
+    // can override default behavor in an ##enforce
     _someFunction() -> int {
         return 0;
     }

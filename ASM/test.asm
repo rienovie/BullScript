@@ -11,7 +11,7 @@ _end:
     syscall
 
 _countChars:
-    
+
     mov r8, r15
 
     l_nextChar:
@@ -28,7 +28,7 @@ _start:
     mov rax, 1
     mov rdi, 1
     mov rsi, message
-    
+
     mov r15, message
     call _countChars
     mov rdx, r8

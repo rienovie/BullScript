@@ -1,10 +1,11 @@
-BullScript bullshitting
+BullScript Brain Storming
 
 I want to create a language that is both squishy and firm.
-I want it to be simple to learn in, but becomes more useful the more you know.
+I want it to be simple to learn in, butbecomes more useful the more you know.
 As you become a better programmer, it'll be with you every step of the way.
 
 Everything is either a type or function.
+Translation: Everything is either a value or a Method modifing a value.
 All functions are within a type.
 Functions declared outside of a type are considered part of the "global" type.
     ie if you have _someFunc() {} and you want to call it you can either write:
@@ -12,14 +13,50 @@ Functions declared outside of a type are considered part of the "global" type.
     These are consider equivalent.
     entry() is also equivalent to global.entry()
 
-Also I'm not sure if this is possible, but I want you to be able to write direct ASM functions if possible.
-ie:
-    _someASMFunc() -> int : ASM {
-        ;asm code here
+Probably won't have direct ASM, but I want the entire language built ontop of BASM (Bull Assembly)
+This will be a simplified ASM that down the line I want it to be able to compile to any 64bit ASM, i.e. BASM can compile to Intel, Arm, etc
+
+I think BASM would look like:
+    _someBASMFunc() -> int : BASM {
+        sys     write
+        arg1    stdout
+        arg2    "Hello World!\n"
+        arg3    arg2->size         ;could also be size<-arg2 or just the actual value
+        call
+
+        return 0
     }
 
-Once I have a better understanding of ASM I'll revisit this idea.
-Worst case I want to have at least a simplified ASM that would be the attribute bsASM
+    Nasm equivalent:
+            section .data
+        var_a: db  "Hello World!", 10
+
+            section .text
+        _size:              ;this will be a built-in method
+            mov r8, r15
+
+            lbl_sizeNextChar:
+            cmp byte [r8], 0
+            je lbl_sizeFinish
+            inc r8
+            jmp lbl_sizeNextChar
+
+            lbl_sizeFinish:
+            sub r8, r15
+            ret
+
+        fn_a:
+            mov rax, 1
+            mov rdi, 1
+            mov rsi, var_a
+
+            mov r15, rsi
+            call _size
+            mov rdx, r8
+
+            syscall
+            mov r8, 0
+            ret
 
 There is three levels to types:
 
@@ -53,6 +90,12 @@ I think NULL will be defined as a specific memory location at program start
 So anything pointing to that location is read to be NULL
 
 If a function already exists it'll overwrite it as long as it's allowed
+i.e. if you have the function:
+    _myFunc() { return 12; }
+and later you write:
+    _myFunc() { return 8; }
+when you call myFunc() it will return 8 not 12
+This won't give a build error, but maybe have built-in tooling that tells the user they are overwriting a previously defined function.
 
 Using multiple files all of these are searched & added automatically:
     All .bs files in the BullScript install directory (basically the default stuff)
@@ -71,6 +114,10 @@ Will probably use extentions:
             var x = 5;
             return x;
         This is a valid program that would run and exit with code 5. This makes it really easy to explain concepts like variables etc to someone who has never seen code before without having the overwhelming thing that is what this same program would look like in c.
+        I also think you can have a compile enforcement that assumes end of line is ;
+        so you can make this a valid script:
+            var x = 5
+            return x
 
 Built-In Types:
     bool
@@ -89,4 +136,5 @@ Built-In Types:
     ptr
     fptr
     var //TODO describe how this will be used as templates
+    void
     null
