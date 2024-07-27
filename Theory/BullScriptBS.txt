@@ -16,23 +16,43 @@ Functions declared outside of a type are considered part of the "global" type.
 Probably won't have direct ASM, but I want the entire language built ontop of BASM (Bull Assembly)
 This will be a simplified ASM that down the line I want it to be able to compile to any 64bit ASM, i.e. BASM can compile to Intel, Arm, etc
 
-I think BASM would look like:
-    _someBASMFunc() -> int : BASM {
+I think there'll be multiple Basm function types. Something like:
+    -Basm:
+        -Prior to call, all main registers pushed onto stack
+        -Input to function goes into "input" (currently r15)
+        -Function call must have return
+        -After function call, all main registers and poped from stack
+        -Return value is placed in output register (current r8)
+    -BasmCore:
+        -Function cannot be called except inside a Basm function
+        -Has a special VAR instruction that'll create a global variable
+        -When function is converted to Basm, will have it's name as fn_(nameOfFunc)
+    -BasmRaw:
+        -Will not modify the registers before and after calling this function
+        -Is basically just a copy-paste into the Final Basm step in the compile process.
+        -Dangerous but freedom baby.
+
+I think Basm would look like:
+    
+    // when a register is on the left, the MOV instruction is assumed
+    // maybe should change that for clarity sake
+    _someBasmFunc() -> int : Basm {
         sys     write
         arg1    stdout
         arg2    "Hello World!\n"
-        arg3    arg2->size         ;could also be size<-arg2 or just the actual value
+        arg3    arg2 -> fn_size        ;could also be fn_size<-arg2 or just the actual value
+        arg3    arg2 >> fn_size        ;not sure if -> or >> maybe both will work?
         call
 
         return 0
     }
 
-    Nasm equivalent:
+        Nasm equivalent:
             section .data
-        var_a: db  "Hello World!", 10
+        v_a: db  "Hello World!", 10
 
             section .text
-        _size:              ;this will be a built-in method
+        fn_size:              ;this will be a built-in method
             mov r8, r15
 
             lbl_sizeNextChar:
@@ -45,20 +65,39 @@ I think BASM would look like:
             sub r8, r15
             ret
 
-        fn_a:
+        ;this is an autoname for funcs and doesn't need to be human readable
+        f_a:
             mov rax, 1
             mov rdi, 1
-            mov rsi, var_a
+            mov rsi, v_a
 
             mov r15, rsi
-            call _size
+            call fn_size
             mov rdx, r8
 
             syscall
             mov r8, 0
             ret
 
-There is three levels to types:
+    For NASM the standard naming is:
+        fn_NAME     Basm external func, humanReadable, callable from any BASM func
+        var_NAME    Basm external var, humanReadable, callable from any BASM func
+        f_NAME      Basm internal func, not humanReadable, user should never see this
+        v_NAME      Basm internal var not humanReadable, user should never see this
+    
+    The internal funcs and vars will probably just be inputs and the functions from BullScript.
+
+
+I also want extra features in Basm that'll make common things easier like:
+        if arg2 > arg3, arg2->size->arg3
+        else arg3->size->arg3
+
+For the -> or >> all must go in a single direction.
+i.e:
+    arg1 <- size <- arg2    is valid but
+    size <- arg2 -> arg1    is not valid
+
+For the main BullScript, there is three levels to types:
 
     lvl 1: inferred (var)
         -automatically detect what the variable is
@@ -138,3 +177,49 @@ Built-In Types:
     var //TODO describe how this will be used as templates
     void
     null
+
+
+The possible compile steps are:
+
+1) populate all data/text
+    -go thru all files and subdirectories
+    -Convert all data into a map of an array of struct:
+    (Array of struct because possible multiple definitions)
+        -Type or Function
+        -File
+        -Line Numbers
+        -Attributes
+        -Full text (possibly just ref indexes of larger string)
+
+2) define all compile funcs/types
+    -go thru all data and fully define (all required funcs/types) each with attribute of "compile"
+
+3) verify compile func/types
+    -syntax and error checking
+
+4) define build opts
+    -Populate all flags/vars in the ##build section
+    -error if missing required (i.e. executableName)
+
+5) define Enforcement
+    -Not sure exactly how this will work yet, but basically have functions that'll enforce things like:
+        -not using resizing vars
+        -banning specific functions / type
+        -must use X at the start of variable names
+        -function names cannot be longer than X
+        -etc
+
+6) Verify Enforcement
+    -syntax and error checking
+
+7) Enforcement
+    The bees knees
+
+8) Compile code into Basm
+    -Most code should be built ontop of Basm but I'm not sure if this will be a seperate language or just tied into the main lang
+
+9) Compile code into Nasm
+    -Will all be in a single file, I don't want to have multiple files created to make it easier, however down the line I think for optimization reasons it's better to have them in multiple files so it doesn't have to recompile stuff that already has been
+
+10) Compile into Executable
+

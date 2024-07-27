@@ -3,12 +3,10 @@
 #include <string>
 
 int main(int argc, char *argv[]) {
-    std::string sLine;
-    int iLine = 0;
-    MACRO_ReadFileByLine("../main.cpp",sLine,{
-        iLine++;
-        util::qPrint(iLine,"|",sLine);
-    });
+    if (argc < 2) {
+        util::qPrint("Source not specified!");
+        return 1;
+    }
 
     return 0;
 }

@@ -1,0 +1,9 @@
+##build
+
+executableName = "testBS"
+
+##end build
+
+_entry() {
+	print("Compiled!");
+}
