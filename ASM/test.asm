@@ -1,7 +1,7 @@
 global _start
 
     section .data
-message: db "Hello great world!", 10, 0
+message: db "Hello world!", 10, 0
 
     section .text
 

@@ -1,0 +1,32 @@
+
+vars start
+
+v_message "Hello World!\n"
+
+vars end
+
+fn_size:
+	output input
+	while byte output != 0, increment output
+	output subtract input
+	
+	return
+
+
+fn_print:
+	sys write
+	arg1 stdout
+	arg2 input
+	arg3 fn_size input
+	call
+
+	return 0
+
+f_end:
+	sys quit
+	arg1 0
+	call
+
+f_start:
+	fn_print var_message
+	f_end

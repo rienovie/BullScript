@@ -51,6 +51,8 @@ I think there'll be multiple BullScript Basm function types. Something like:
         -Has a special VAR instruction that'll create a global variable
         -When function is converted to Basm, will have it's name as fn_(nameOfFunc)
 
+//This is out of date, look at BullScript_CPP_Compiler/Basm/test.basm for actual syntax
+//Even with this out of date, it'll give you an idea how it'll work
 I think Basm would look like:
 
     // when a register is on the left, the MOV instruction is assumed
