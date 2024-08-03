@@ -1,32 +1,92 @@
 
-vars start
+; db 8b / dw 16b / dd 32b / dq 64b
+create 8b message = "Hello World!\n"
 
-v_message "Hello World!\n"
+; can also do multiline create example:
+create:
+	8b anotherMessage = "Hello again!\n"
+	8b aValue = 8 ; TODO check print with 101 to see if working correctly
+end create
 
-vars end
+; define is a container
+; define (keyword to call) << (name of contents)
+; after container defined, the text following with a : afterwards is how you would call it
+; this allows pre & post actions to a function call
+; I think this'll allow other things as well but will have to experiment
+; These two defines "func" & "fn" will be built-in for Basm and BullScript
 
-fn_size:
+; this is for basic Basm functions
+define func << function
+	tempInput input
+	stackPush
+	input tempInput
+	function
+	tempOutput output
+	stackPop
+	inline tempOutput
+end define
+
+; this is a raw Basm function
+define fn << function
+	function
+end define
+
+; All functions must return
+
+fn stackPush:
+	; This is equivallent to:
+	; push sys
+	; push arg1
+	; ...
+	push sys, arg1, arg2, arg3, arg4, arg5, input, output
+
+	return
+end fn
+
+fn stackPop:
+	; Called in reverse order to maintain correct values from stack
+	pop output, input, arg5, arg4, arg3, arg2, arg1, sys
+
+	return
+end fn
+
+func length:
 	output input
 	while byte output != 0, increment output
 	output subtract input
 	
 	return
+end func
 
+func print:
+	; two ways to call a syscall / each of these are equivallent
+	; as this is typed, this'll be printed twice
 
-fn_print:
+	; call style one:
+	syscall write, stdout, input, length input
+
+	; call style two:
 	sys write
 	arg1 stdout
 	arg2 input
-	arg3 fn_size input
+	arg3 size input
 	call
 
-	return 0
+	; TODO add a default \n to each print
 
-f_end:
-	sys quit
-	arg1 0
-	call
+	return
+end func
 
-f_start:
-	fn_print var_message
-	f_end
+; It'll be standard practice to use a "entry" & "end" at the bottom of a file like this
+
+fn end:
+	syscall quit, 0
+end fn
+
+fn entry:
+	print message
+	print anotherMessage
+	print aValue
+	print "A string literal\n"
+	end
+end fn
