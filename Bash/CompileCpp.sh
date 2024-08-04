@@ -15,5 +15,5 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ $# -gt 0 ] && [ $1 = "run" ]; then
-	./bull_cpp
+	./bull_cpp ~/projects/BullScript/BullScript_CPP_Compiler/Basm/test.basm test
 fi

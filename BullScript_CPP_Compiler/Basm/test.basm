@@ -1,11 +1,15 @@
 
 ; db 8b / dw 16b / dd 32b / dq 64b
+; when value set will go into .data
+; when value not set will go into .bss
 create 8b message = "Hello World!\n"
 
 ; can also do multiline create example:
 create:
 	8b anotherMessage = "Hello again!\n"
-	8b aValue = 8 ; TODO check print with 101 to see if working correctly
+	8b aValue = 8 ; TODO: check print with 101 to see if working correctly
+	16b unintializeVariable
+	const 8b immutableMessage = "Immute Hello!\n" ; const variables will go into .rodata
 end create
 
 ; define is a container
@@ -16,7 +20,7 @@ end create
 ; These two defines "func" & "fn" will be built-in for Basm and BullScript
 
 ; this is for basic Basm functions
-define func << function
+define func << function :
 	tempInput input
 	stackPush
 	input tempInput
@@ -27,7 +31,7 @@ define func << function
 end define
 
 ; this is a raw Basm function
-define fn << function
+define fn << function :
 	function
 end define
 
@@ -79,7 +83,7 @@ end func
 
 ; It'll be standard practice to use a "entry" & "end" at the bottom of a file like this
 
-fn end:
+fn exit:
 	syscall quit, 0
 end fn
 
@@ -88,5 +92,5 @@ fn entry:
 	print anotherMessage
 	print aValue
 	print "A string literal\n"
-	end
+	exit
 end fn
