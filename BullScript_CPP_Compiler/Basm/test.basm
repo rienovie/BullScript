@@ -81,7 +81,7 @@ func print:
 	return
 end func
 
-; It'll be standard practice to use a "entry" & "end" at the bottom of a file like this
+; It'll be standard practice to use a "entry" & "exit" at the bottom of a file like this
 
 fn exit:
 	syscall quit, 0

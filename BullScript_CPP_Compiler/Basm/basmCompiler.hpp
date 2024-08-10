@@ -15,10 +15,11 @@ public:
 		std::vector<std::string> vContents;
 	};
 
-	static std::map<std::string,std::vector<brick>> mBricks;
+	static std::map<std::string,std::vector<brick*>> mBricks;
 
 	static void compileFromFile(std::string sFile);
 
 private:
-	static void buildBrick(std::string sBrickName, std::string sBrickRawContents);	
+	static void buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline);
+	static void sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents);
 };

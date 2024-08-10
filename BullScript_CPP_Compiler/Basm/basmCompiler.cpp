@@ -18,7 +18,7 @@ void basm::compileFromFile(std::string sFile) {
         sBuild.clear();
         for(int i = 0; i < iLineLength; i++) {
             curChar = sLine[i];
-            if(curChar == ';') { 
+            if(curChar == ';') {
                 if(bBrickStarted && !bMultiLineBrick) { bCompleteBrick = true; }
                 break;
             }
@@ -31,8 +31,8 @@ void basm::compileFromFile(std::string sFile) {
                         break; // leave line
                     }
                 } else {
-                    if(curChar == ':') { bMultiLineBrick = true; }
-                    if(curChar == '\n') {
+                    if(curChar == ':') { bMultiLineBrick = true; break; }
+                    if(i == iLineLength - 1) {
                         bCompleteBrick = true;
                         break;
                     }
@@ -51,9 +51,11 @@ void basm::compileFromFile(std::string sFile) {
         }
 
         if(bBrickStarted) {
+            sCurrentBrick.push_back('\n');
             if(bCompleteBrick) {
                 if (!bMultiLineBrick) { sCurrentBrick.append(sBuild); }
-                buildBrick(sCurrentBrickName, sCurrentBrick);
+                sanitizeRawBrickData(sCurrentBrickName, sCurrentBrick);
+                buildBrick(sCurrentBrickName, sCurrentBrick, bMultiLineBrick);
                 sCurrentBrick.clear();
                 sCurrentBrickName.clear();
                 bBrickStarted = false;
@@ -66,7 +68,48 @@ void basm::compileFromFile(std::string sFile) {
     });
 }
 
-void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents) {
-    // TODO:
-    util::qPrint("Brick Name:", sBrickName, "\nBrick Contents:", sBrickRawContents);
+void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline) {
+    util::qPrint("~",sBrickRawContents,"~");
+    if(sBrickName == "create") {
+        if(bMultiline) {
+            
+        } else {
+
+        }
+    } else {
+        
+    }
+}
+
+void basm::sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents) {
+    util::removeAllOfChar(sBrickRawContents, '\t');
+
+    //removes empty lines
+    std::string
+        sBuild = "",
+        sOutput;
+    int iBuildLength = 0;
+    for (int i = 0; i < sBrickRawContents.length(); i++) {
+        sBuild.push_back(sBrickRawContents[i]);
+        iBuildLength = sBuild.length();
+
+        if(sBrickRawContents[i] == '\n') {
+            if(iBuildLength < 3) {
+                sBuild.clear();
+                iBuildLength = 0;
+                continue;
+            } else {
+                sOutput.append(sBuild);
+                sBuild.clear();
+                iBuildLength = 0;
+            }
+
+        }
+    }
+
+    if(iBuildLength > 2) sOutput.append(sBuild);
+
+    if(sOutput[sOutput.length()-1] == '\n') sOutput.pop_back();
+    sBrickRawContents = sOutput;
+
 }
