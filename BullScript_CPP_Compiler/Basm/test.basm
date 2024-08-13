@@ -73,7 +73,7 @@ func print:
 	sys write
 	arg1 stdout
 	arg2 input
-	arg3 size input
+	arg3 length input
 	call
 
 	; TODO add a default \n to each print

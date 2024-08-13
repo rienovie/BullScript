@@ -83,8 +83,7 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
     outputBrick.sName = "UNDEFINED";
 
     std::string sBuild = "";
-    std::vector<std::string> vElements;
-    bool bInsideParen = false;
+    char currentChar;
 
     if(sBrickName == "create") {
         if(bMultiline) {
@@ -92,8 +91,8 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
                 buildBrick("create", line, false);
             }
         } else {
-            char currentChar;
             bool bEqualOnLine = util::contains(sBrickRawContents,'=');
+            bool bInsideParen = false;
             for(int i = sBrickRawContents.length()-1; i > -1; i--) {
                 currentChar = sBrickRawContents[i];
                 if(bInsideParen) {
@@ -139,8 +138,49 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
                 }
             }
         }
+    } else if(sBrickName == "define") {
+        std::vector<std::string> vElements;
+        bool bInContent = false;
+
+        for(int i = 0; i < sBrickRawContents.length(); i++) {
+            currentChar = sBrickRawContents[i];
+            if(bInContent) {
+                if(currentChar == '\n') {
+                    if(sBuild.length() > 0) outputBrick.vContents.push_back(sBuild);
+                    sBuild.clear();
+                } else if(currentChar != ':') sBuild.push_back(currentChar);
+
+            } else if((currentChar == ' ' || currentChar == '<') && sBuild.length() > 0) {
+                if(outputBrick.sName == "UNDEFINED") outputBrick.sName = sBuild;
+                else {
+                    outputBrick.vAttributes.push_back(sBuild);
+                    bInContent = true;
+                }
+                sBuild.clear();
+            } else if(currentChar != ' ' && currentChar != '<') sBuild.push_back(currentChar);
+        }
+
+        if(sBuild.length() > 0) {
+            outputBrick.vContents.push_back(sBuild);
+            sBuild.clear();
+        }
     } else {
-        
+        for(int i = 0; i < sBrickRawContents.length(); i++) {
+            currentChar = sBrickRawContents[i];
+            if(outputBrick.sName == "UNDEFINED" && currentChar == ':') {
+                outputBrick.sName = sBuild;
+                sBuild.clear();
+            } else if(currentChar == '\n' && sBuild.length() > 0){
+                outputBrick.vContents.push_back(sBuild);
+                sBuild.clear();
+            } else if(currentChar != '\n') {
+                sBuild.push_back(currentChar);
+            }
+        }
+        if(sBuild.length() > 0) {
+            outputBrick.vContents.push_back(sBuild);
+            sBuild.clear();
+        }
     }
 
     if(outputBrick.sName != "UNDEFINED") mBricks[outputBrick.sName].push_back(outputBrick);
