@@ -69,22 +69,54 @@ void basm::compileFromFile(std::string sFile) {
 }
 
 void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline) {
-    util::qPrint("~",sBrickRawContents,"~");
+    brick outputBrick;
+    outputBrick.sKeyword = sBrickName;
+
+    std::string sBuild = "";
+    std::vector<std::string> vElements;
+    bool bInsideParen = false;
+
     if(sBrickName == "create") {
         if(bMultiline) {
-            
+            for(auto& line : util::splitStringOnChar(sBrickRawContents, '\n')) {
+                buildBrick("create", line, false);
+            }
         } else {
+            char currentChar;
+            for(int i = sBrickRawContents.length()-1; i > -1; i--) {
+                currentChar = sBrickRawContents[i];
+                if(bInsideParen) {
+                    if(i == 0) {
+                        std::string sErrorOut;
+                        if(currentChar == '\"') {
+                            sErrorOut.append("Found 0 index \" on a line while trying to build brick ");
+                        } else {
+                            sErrorOut.append("Error parsing with a \" while trying to build brick ");
+                        }
+                        sErrorOut.append(sBrickName);
+                        sErrorOut.append("\n\nBrick Contents:\n");
+                        sErrorOut.append(sBrickRawContents);
 
+                        error(sErrorOut,"Verify Brick " + sBrickName + " has proper quotation");
+                    }
+                    if(currentChar == '"' && sBrickRawContents[i-1] != '\\') {
+                        bInsideParen = false;
+                        sBuild.push_back(currentChar);
+                    }
+                } else {
+
+                }
+            }
         }
     } else {
         
     }
+
 }
 
 void basm::sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents) {
     util::removeAllOfChar(sBrickRawContents, '\t');
 
-    //removes empty lines
     std::string
         sBuild = "",
         sOutput;
@@ -113,3 +145,10 @@ void basm::sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawC
     sBrickRawContents = sOutput;
 
 }
+
+void basm::error(std::string sMessage, std::string sSolution) {
+    util::qPrint("Basm Error!\n", sMessage);
+    util::qPrint("\n\nPossible solution:\n", sSolution);
+    throw;
+}
+

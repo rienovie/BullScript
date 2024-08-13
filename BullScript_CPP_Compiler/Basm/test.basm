@@ -8,7 +8,7 @@ create 8b message = "Hello World!\n"
 create:
 	8b anotherMessage = "Hello again!\n"
 	8b aValue = 8 ; TODO: check print with 101 to see if working correctly
-	16b unintializeVariable
+	16b unintializedVariable
 	const 8b immutableMessage = "Immute Hello!\n" ; const variables will go into .rodata
 end create
 
