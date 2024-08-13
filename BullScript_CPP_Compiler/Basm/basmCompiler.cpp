@@ -1,4 +1,7 @@
 #include "basmCompiler.hpp"
+#include <algorithm>
+
+std::map<std::string,std::vector<basm::brick>> basm::mBricks {};
 
 void basm::compileFromFile(std::string sFile) {
     std::string
@@ -66,11 +69,18 @@ void basm::compileFromFile(std::string sFile) {
             }
         }
     });
+
+    for(auto& m : mBricks) {
+        for(auto& b : m.second) {
+            printBrick(b);
+        }
+    }
 }
 
 void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline) {
     brick outputBrick;
     outputBrick.sKeyword = sBrickName;
+    outputBrick.sName = "UNDEFINED";
 
     std::string sBuild = "";
     std::vector<std::string> vElements;
@@ -83,6 +93,7 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
             }
         } else {
             char currentChar;
+            bool bEqualOnLine = util::contains(sBrickRawContents,'=');
             for(int i = sBrickRawContents.length()-1; i > -1; i--) {
                 currentChar = sBrickRawContents[i];
                 if(bInsideParen) {
@@ -98,19 +109,41 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
                         sErrorOut.append(sBrickRawContents);
 
                         error(sErrorOut,"Verify Brick " + sBrickName + " has proper quotation");
-                    }
-                    if(currentChar == '"' && sBrickRawContents[i-1] != '\\') {
+                    } else if(currentChar == '"' && sBrickRawContents[i-1] != '\\') {
                         bInsideParen = false;
-                        sBuild.push_back(currentChar);
+                    }
+                    sBuild.push_back(currentChar);
+                } else if(currentChar == '\"') {
+                    bInsideParen = true;
+                    sBuild.push_back(currentChar);
+                } else if((currentChar == ' ' || currentChar == '=') && sBuild.length() > 0) {
+                    if(bEqualOnLine && i >= sBrickRawContents.find('=')) {
+                        std::reverse(sBuild.begin(), sBuild.end());
+                        outputBrick.vContents.push_back(sBuild);
+                        sBuild.clear();
+                    } else if(outputBrick.sName == "UNDEFINED") {
+                        std::reverse(sBuild.begin(), sBuild.end());
+                        outputBrick.sName = sBuild;
+                        sBuild.clear();
+                    } else {
+                        std::reverse(sBuild.begin(), sBuild.end());
+                        outputBrick.vAttributes.push_back(sBuild);
+                        sBuild.clear();
                     }
                 } else {
-
+                    if(currentChar != ' ' && currentChar != '=') sBuild.push_back(currentChar);
+                    if(i == 0) {
+                        std::reverse(sBuild.begin(), sBuild.end());
+                        outputBrick.vAttributes.push_back(sBuild);
+                    }
                 }
             }
         }
     } else {
         
     }
+
+    if(outputBrick.sName != "UNDEFINED") mBricks[outputBrick.sName].push_back(outputBrick);
 
 }
 
@@ -150,5 +183,17 @@ void basm::error(std::string sMessage, std::string sSolution) {
     util::qPrint("Basm Error!\n", sMessage);
     util::qPrint("\n\nPossible solution:\n", sSolution);
     throw;
+}
+
+void basm::printBrick(basm::brick toPrint) {
+    util::qPrint("Keyword:", toPrint.sKeyword);
+    util::qPrint("Brick Name:", toPrint.sName);
+    for(auto& i : toPrint.vAttributes) {
+        util::qPrint("Attribute:",i);
+    }
+    for(auto& i : toPrint.vContents) {
+        util::qPrint("Content:",i);
+    }
+    util::qPrint("\n");
 }
 

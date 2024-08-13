@@ -23,5 +23,6 @@ private:
 	static void
 		buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline),
 		sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents),
-		error(std::string sMessage, std::string sSolution);
+		error(std::string sMessage, std::string sSolution),
+		printBrick(brick toPrint);
 };
