@@ -2,14 +2,15 @@
 ; db 8b / dw 16b / dd 32b / dq 64b
 ; when value set will go into .data
 ; when value not set will go into .bss
-create 8b message = "Hello World!\n"
+; const variables will go into .rodata
+create const 8b message = "Hello World!\n"
 
 ; can also do multiline create example:
 create:
 	8b anotherMessage = "Hello again!\n"
 	8b aValue = 8 ; TODO: check print with 101 to see if working correctly
 	16b unintializedVariable
-	const 8b immutableMessage = "Immute Hello!\n" ; const variables will go into .rodata
+	const 8b immutableMessage = "Immute Hello!\n"
 end create
 
 ; define is a container
@@ -37,10 +38,10 @@ end define
 
 ; All functions must return
 
-fn while << contents :
+fn while << condition loopContents :
 	label whileJump
-	if cond input :
-		contents
+	if condition input :
+		loopContents
 		jump whileJump
 	end if
 

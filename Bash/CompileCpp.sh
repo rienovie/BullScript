@@ -14,6 +14,9 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+echo $'Bull CPP Compile success!\n\n'
+
 if [ $# -gt 0 ] && [ $1 = "run" ]; then
 	./bull_cpp ~/projects/BullScript/BullScript_CPP_Compiler/Basm/test.basm test
 fi
+

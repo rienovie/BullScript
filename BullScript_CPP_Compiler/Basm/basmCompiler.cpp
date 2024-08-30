@@ -4,6 +4,10 @@
 std::map<std::string,std::vector<basm::brick>> basm::mBricks {};
 
 void basm::compileFromFile(std::string sFile) {
+    buildBricksFromFile(sFile);
+}
+
+void basm::buildBricksFromFile(std::string sFile) {
     std::string
         sLine,
         sBuild,
@@ -165,11 +169,27 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
             sBuild.clear();
         }
     } else {
+        bool bFirstLine = true;
         for(int i = 0; i < sBrickRawContents.length(); i++) {
             currentChar = sBrickRawContents[i];
-            if(outputBrick.sName == "UNDEFINED" && currentChar == ':') {
+            if(bFirstLine && currentChar == '\n') bFirstLine = false;
+            if(outputBrick.sName == "UNDEFINED"
+            && (currentChar == ':' || currentChar == ' ')
+            && (sBuild.length() > 0)){
                 outputBrick.sName = sBuild;
                 sBuild.clear();
+            } else if(bFirstLine){ // only checks for att if first line
+                if(sBuild.length() > 0 && currentChar == ':') {
+                    outputBrick.vAttributes.push_back(sBuild);
+                    sBuild.clear();
+                } else if (currentChar == ' ' && sBuild.length() > 0) {
+                    outputBrick.vAttributes.push_back(sBuild);
+                    sBuild.clear();
+                } else if(currentChar != '<'
+                && currentChar != ':'
+                && currentChar != ' ') {
+                    sBuild.push_back(currentChar);
+                }
             } else if(currentChar == '\n' && sBuild.length() > 0){
                 outputBrick.vContents.push_back(sBuild);
                 sBuild.clear();
@@ -226,13 +246,13 @@ void basm::error(std::string sMessage, std::string sSolution) {
 }
 
 void basm::printBrick(basm::brick toPrint) {
-    util::qPrint("Keyword:", toPrint.sKeyword);
-    util::qPrint("Brick Name:", toPrint.sName);
+    util::qPrint("NAM", toPrint.sName);
+    util::qPrint("KEY", toPrint.sKeyword);
     for(auto& i : toPrint.vAttributes) {
-        util::qPrint("Attribute:",i);
+        util::qPrint("ATT",i);
     }
     for(auto& i : toPrint.vContents) {
-        util::qPrint("Content:",i);
+        util::qPrint("CON",i);
     }
     util::qPrint("\n");
 }
