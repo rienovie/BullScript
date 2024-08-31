@@ -25,5 +25,6 @@ private:
 		sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents),
 		error(std::string sMessage, std::string sSolution),
 		printBrick(brick toPrint),
-		buildBricksFromFile(std::string sFile);
+		buildBricksFromFile(std::string sFile),
+		verifyEntryAndExitBricks();
 };
