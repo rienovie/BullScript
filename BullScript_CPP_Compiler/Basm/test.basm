@@ -14,60 +14,62 @@ create:
 end create
 
 ; define is a container
-; define (keyword to call) << (name of contents)
+; define (keyword to call) << contents (keyword)
+; "contents" keyword is a "func" that takes muliple lines as an input
 ; after container defined, the text following with a : afterwards is how you would call it
 ; this allows pre & post actions to a function call
 ; I think this'll allow other things as well but will have to experiment
 ; These two defines "func" & "fn" will be built-in for Basm and BullScript
 
 ; this is for basic Basm functions
-define func << function :
+define func << contents :
 	tempInput input
 	stackPush
 	input tempInput
-	function
+	contents
 	tempOutput output
 	stackPop
-	inline tempOutput
+	output tempOutput
 end define
 
 ; this is a raw Basm function
-define fn << function :
-	function
+define fn << contents :
+	contents
 end define
 
 ; All functions must return
 
-fn while << condition loopContents :
+func while << condition contents :
 	label whileJump
-	if condition input :
-		loopContents
-		jump whileJump
+	if condition :
+		contents
+		jump label whileJump
 	end if
 
 	return
-end fn
+end func
 
 fn stackPush:
 	; This is equivallent to:
 	; push sys
 	; push arg1
 	; ...
-	push sys, arg1, arg2, arg3, arg4, arg5, input, output
+	push sys, arg1, arg2, arg3, arg4, arg5, arg6, input, output
 
 	return
 end fn
 
 fn stackPop:
 	; Called in reverse order to maintain correct values from stack
-	pop output, input, arg5, arg4, arg3, arg2, arg1, sys
+	pop output, input, arg6, arg5, arg4, arg3, arg2, arg1, sys
 
 	return
 end fn
 
 func length:
 	output input
-	while byte output != 0 :
+	; conditions must be surrounded with parenthesis
+	while (byte output != 0) :
 		increment output
 	end while
 	output subtract input
@@ -80,11 +82,11 @@ func print:
 	; as this is typed, this'll be printed twice
 
 	; call style one:
-	syscall write, stdout, input, length input
+	syscall $write, #stdout, input, length input
 
 	; call style two:
-	sys write
-	arg1 stdout
+	sys $write
+	arg1 #stdout
 	arg2 input
 	arg3 length input
 	call
@@ -97,7 +99,7 @@ end func
 ; It'll be standard practice to use a "entry" & "exit" at the bottom of a file like this
 
 fn exit:
-	syscall quit, 0
+	syscall $exit, 0
 end fn
 
 fn entry:

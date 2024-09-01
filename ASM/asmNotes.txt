@@ -25,6 +25,6 @@ so I'll try to organize how I'm thinking about it:
 _funcName -> same as bs standard to keep things consistent
 l_ -> label
 
-r15, r14, r13, r12 -> function inputs
-r9, r10, r11 -> play values (modify and use freely)
-r8 -> function return
+input / tempInput = r14, r15
+output / tempOutput = r11, r12
+
