@@ -80,6 +80,8 @@ end func
 func print:
 	; two ways to call a syscall / each of these are equivallent
 	; as this is typed, this'll be printed twice
+	; $ is used to convert to value of syscall
+	; # is used to convert to predetermined values
 
 	; call style one:
 	syscall $write, #stdout, input, length input

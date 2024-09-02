@@ -15,7 +15,23 @@ public:
 		std::vector<std::string> vContents;
 	};
 
+	// NOTE: will probably add more later
+	enum keywordType { INSTRUCTION = 0, REGISTER = 1, SUBSTITUTION = 2, UNIQUE = 3,};
+
+	struct asmTranslation {
+		keywordType type;
+		std::string x86_64;
+
+		// NOTE: will add ARM and others later
+	};
+	struct asmValue {
+		int x86_64;
+		// NOTE: will add ARM and others later
+	};
+
 	static std::map<std::string,std::vector<brick>> mBricks;
+	static std::map<std::string,asmTranslation> mTranslations;
+	static std::map<std::string,asmValue> mValues;
 
 	static void compileFromFile(std::string sFile);
 
@@ -26,5 +42,7 @@ private:
 		error(std::string sMessage, std::string sSolution),
 		printBrick(brick toPrint),
 		buildBricksFromFile(std::string sFile),
-		verifyEntryAndExitBricks();
+		verifyEntryAndExitBricks(),
+		loadTranslations(),
+		printTranslations();
 };

@@ -1,11 +1,78 @@
 #include "basmCompiler.hpp"
 #include <algorithm>
+#include <sqlite3.h>
 
 std::map<std::string,std::vector<basm::brick>> basm::mBricks {};
+std::map<std::string,basm::asmTranslation> basm::mTranslations {};
+std::map<std::string,basm::asmValue> basm::mValues {};
 
 void basm::compileFromFile(std::string sFile) {
+  loadTranslations();
   buildBricksFromFile(sFile);
   verifyEntryAndExitBricks();
+  printTranslations();
+}
+
+void basm::loadTranslations() {
+  sqlite3* db;
+  sqlite3_stmt* statement;
+  std::string sName;
+
+  int openDB = sqlite3_open("../Basm/basmTranslation.db", &db);
+  if(openDB != SQLITE_OK) {
+    std::string err = sqlite3_errmsg(db);
+    sqlite3_close(db);
+    error("Error loading basmTranslation DB! Error: " + err, "Verify DB file exists with name \"basmTranslation.db\"");
+  }
+  openDB = sqlite3_prepare_v2(db,"SELECT * FROM Main;",-1,&statement,NULL);
+  if(openDB != SQLITE_OK) {
+    std::string err = sqlite3_errmsg(db);
+    sqlite3_close(db);
+    error("Error preparing basmTranslation DB Main Table! Error: " + err, "Verify prepare statement in compiler's code.");
+  }
+
+  asmTranslation transToAdd;
+  while((openDB = sqlite3_step(statement)) == SQLITE_ROW) {
+    transToAdd.x86_64.clear();
+    sName.clear();
+    transToAdd.type = static_cast<keywordType>(sqlite3_column_int(statement, 1));
+    if(transToAdd.type != UNIQUE) {
+      transToAdd.x86_64 = std::string(reinterpret_cast<const char*>(sqlite3_column_text(statement, 2)));
+    }
+    sName = std::string(reinterpret_cast<const char*>(sqlite3_column_text(statement, 0)));
+    mTranslations[sName] = transToAdd;
+  }
+  sqlite3_finalize(statement);
+
+  openDB = sqlite3_prepare_v2(db,"SELECT * FROM Vals;",-1,&statement,NULL);
+  if(openDB != SQLITE_OK) {
+    std::string err = sqlite3_errmsg(db);
+    sqlite3_close(db);
+    error("Error preparing basmTranslation DB Values Table! Error: " + err, "Verify prepare statement in compiler's code.");
+  }
+
+  asmValue valToAdd;
+  while((openDB = sqlite3_step(statement)) == SQLITE_ROW) {
+    sName.clear();
+    sName = std::string(reinterpret_cast<const char*>(sqlite3_column_text(statement, 0)));
+    valToAdd.x86_64 = sqlite3_column_int(statement,1);
+    mValues[sName] = valToAdd;
+  }
+  sqlite3_finalize(statement);
+
+  sqlite3_close(db);
+}
+
+void basm::printTranslations() {
+  util::qPrint("\nMain table:");
+  for(auto& i : mTranslations) {
+    util::qPrint(i.second.type,i.first,i.second.x86_64);
+  }
+  util::qPrint("\nValue table:");
+  for(auto& i : mValues) {
+    util::qPrint(i.first,i.second.x86_64);
+  }
+  util::qPrint("\n");
 }
 
 void basm::verifyEntryAndExitBricks() {
@@ -274,7 +341,7 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
 
 void basm::error(std::string sMessage, std::string sSolution) {
   util::qPrint("Basm Error!\n", sMessage);
-  util::qPrint("\n\nPossible solution:\n", sSolution);
+  util::qPrint("\nPossible solution:\n", sSolution, "\n\n");
   throw;
 }
 
