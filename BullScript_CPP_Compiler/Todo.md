@@ -6,6 +6,10 @@ I think this'll be the easiest / shortest thing to start on, and I'll be able to
 
 Steps for Basm compiler:
 
+  [x]Load Translations
+
+    [x]Load from db file keyword translations, values, etc
+
   [x]Build Bricks
 
     [x]Parse and translate top level to basic brick data
@@ -34,7 +38,7 @@ Steps for Basm compiler:
         []Only define values and functions in use
         []Throws:
           []Definition not found
-          []Container(Define) has no return
+          []Container(Define) has no return (entry and exit fn excluded)
 
   []Translate
 

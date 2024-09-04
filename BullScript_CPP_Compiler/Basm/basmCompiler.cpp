@@ -8,9 +8,13 @@ std::map<std::string,basm::asmValue> basm::mValues {};
 
 void basm::compileFromFile(std::string sFile) {
   loadTranslations();
+
   buildBricksFromFile(sFile);
   verifyEntryAndExitBricks();
+
+  printAllBricks();
   printTranslations();
+
 }
 
 void basm::loadTranslations() {
@@ -168,7 +172,9 @@ void basm::buildBricksFromFile(std::string sFile) {
       }
     }
   });
+}
 
+void basm::printAllBricks() {
   for (auto &m : mBricks) {
     for (auto &b : m.second) {
       printBrick(b);
