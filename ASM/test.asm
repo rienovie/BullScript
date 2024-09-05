@@ -6,6 +6,8 @@ message: db "Hello world!", 10, 0
     section .text
 
 fn_stackPush:
+    pop rbx; pop return addr
+
     push rax
     push rdi
     push rsi
@@ -16,9 +18,13 @@ fn_stackPush:
     push r14
     push r11
 
+    push rbx; push return addr
+
     ret
 
 fn_stackPop:
+    pop rbx; pop return addr
+
     pop r11
     pop r14
     pop r9
@@ -28,6 +34,8 @@ fn_stackPop:
     pop rsi
     pop rdi
     pop rax
+
+    push rbx; push return addr
 
     ret
 
@@ -69,9 +77,9 @@ func_print:
 
     ret
 
-_end:
+_exit:
     mov rax, 60
-    xor rdi, rdi
+    mov rdi, 0
     syscall
 
 _start:
@@ -79,4 +87,4 @@ _start:
     mov r13, func_print
     call _func
 
-    jmp _end
+    call _exit

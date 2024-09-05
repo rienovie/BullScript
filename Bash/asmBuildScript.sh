@@ -8,7 +8,7 @@ else
 fi
 
 #Nasm compile step
-nasm -felf64 "$INPUT"
+nasm -felf64 -g "$INPUT"
 
 if [ $? -ne 0 ]; then
     echo "Nasm error"

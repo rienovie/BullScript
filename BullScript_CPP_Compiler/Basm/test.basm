@@ -50,18 +50,30 @@ func while << condition contents :
 end func
 
 fn stackPush:
+	; not sure on this name, but it's for rbx
+	; I think I'll probably have multiple aliases for the same regs
+	; ie rax(regA, sys)
+	; I don't want the actual names to be used because I want this to be universal asm
+	pop regB
+
 	; This is equivallent to:
 	; push sys
 	; push arg1
 	; ...
 	push sys, arg1, arg2, arg3, arg4, arg5, arg6, input, output
 
+	push regB
+
 	return
 end fn
 
 fn stackPop:
+	pop regB
+
 	; Called in reverse order to maintain correct values from stack
 	pop output, input, arg6, arg5, arg4, arg3, arg2, arg1, sys
+
+	push regB
 
 	return
 end fn
