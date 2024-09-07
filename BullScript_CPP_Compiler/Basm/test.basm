@@ -39,7 +39,17 @@ end define
 
 ; All functions must return
 
-func while << condition contents :
+; the "if" and "while" funcs will be built in
+
+fn if << condition contents:
+	jumpFalse condition, ifEnd
+	contents
+	label ifEnd
+
+	return
+end fn
+
+fn while << condition contents :
 	label whileJump
 	if condition :
 		contents
@@ -47,33 +57,33 @@ func while << condition contents :
 	end if
 
 	return
-end func
+end fn
 
 fn stackPush:
 	; not sure on this name, but it's for rbx
 	; I think I'll probably have multiple aliases for the same regs
 	; ie rax(regA, sys)
 	; I don't want the actual names to be used because I want this to be universal asm
-	pop regB
+	pop reg1
 
 	; This is equivallent to:
 	; push sys
 	; push arg1
 	; ...
-	push sys, arg1, arg2, arg3, arg4, arg5, arg6, input, output
+	push regA, regB, regC, regD, arg1, arg2, input, output
 
-	push regB
+	push reg1
 
 	return
 end fn
 
 fn stackPop:
-	pop regB
+	pop reg1
 
 	; Called in reverse order to maintain correct values from stack
-	pop output, input, arg6, arg5, arg4, arg3, arg2, arg1, sys
+	pop output, input, arg2, arg1, regD, regC, regB, regA
 
-	push regB
+	push reg1
 
 	return
 end fn

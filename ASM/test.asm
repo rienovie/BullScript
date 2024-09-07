@@ -6,47 +6,45 @@ message: db "Hello world!", 10, 0
     section .text
 
 fn_stackPush:
-    pop rbx; pop return addr
+    pop r8; pop return addr
 
     push rax
+    push rbx
+    push rcx
+    push rdx
     push rdi
     push rsi
-    push rdx
-    push r10
-    push r8
-    push r9
     push r14
     push r11
 
-    push rbx; push return addr
+    push r8; push return addr
 
     ret
 
 fn_stackPop:
-    pop rbx; pop return addr
+    pop r8; pop return addr
 
     pop r11
     pop r14
-    pop r9
-    pop r8
-    pop r10
-    pop rdx
     pop rsi
     pop rdi
+    pop rdx
+    pop rcx
+    pop rbx
     pop rax
 
-    push rbx; push return addr
+    push r8; push return addr
 
     ret
 
 _func:
     mov r15, r14 ; input to temp
-    call fn_stackPush
-    mov r14, r15
-    call r13
-    mov r12, r11
+    call fn_stackPush ; pushes input/output
+    mov r14, r15 ; move input back
+    call r13 ; call func set
+    mov r12, r11 ; output to temp
     call fn_stackPop
-    mov r11, r12
+    mov r11, r12 ; move output back
 
     ret
 

@@ -1,0 +1,19 @@
+rax		sys / regA
+rbx		regB
+rcx		regC
+rdx		arg3 / regD
+rsi		arg2
+rdi		arg1
+rbp		regBase
+rsp		regStack
+r8		arg5 / reg1
+r9		arg6 / reg2
+r10		arg4 / reg3
+r11		output
+r12		tempOutput
+r13		regFunc
+r14		input
+r15		tempInput
+
+db type values:
+INSTRUCTION = 0, REGISTER = 1, SUBSTITUTION = 2, UNIQUE = 3
