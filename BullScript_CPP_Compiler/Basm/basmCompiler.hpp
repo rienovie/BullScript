@@ -8,6 +8,7 @@
 
 class basm {
 public:
+	// TODO: give bricks line numbers so error messages can be more useful
 	struct brick {
 		std::string sKeyword;
 		std::vector<std::string> vAttributes;
@@ -44,8 +45,9 @@ private:
 		error(std::string sMessage, std::string sSolution),
 		printBrick(brick toPrint),
 		buildBricksFromFile(std::string sFile),
-		verifyEntryAndExitBricks(),
+		verifyEntryAndExitBricks(bool bPrintIfFound = true),
 		loadTranslations(),
 		printTranslations(),
-		printAllBricks();
+		printAllBricks(),
+		branchOutFromBrick(brick branchBrick);
 };

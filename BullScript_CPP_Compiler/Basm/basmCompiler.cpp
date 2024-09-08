@@ -8,13 +8,19 @@ std::map<std::string,basm::asmValue> basm::mValues {};
 
 void basm::compileFromFile(std::string sFile) {
   loadTranslations();
+  // printTranslations();
 
   buildBricksFromFile(sFile);
   verifyEntryAndExitBricks();
 
   printAllBricks();
-  printTranslations();
 
+  branchOutFromBrick(mBricks["entry"].at(0));
+
+}
+
+void basm::branchOutFromBrick(basm::brick branchBrick) {
+   // TODO: working here
 }
 
 void basm::loadTranslations() {
@@ -79,20 +85,29 @@ void basm::printTranslations() {
   util::qPrint("\n");
 }
 
-void basm::verifyEntryAndExitBricks() {
+void basm::verifyEntryAndExitBricks(bool bPrintIfFound) {
   bool bEntry = false, bExit = false;
   for(auto& b : mBricks) {
     if(b.first == "entry") {
       bEntry = true;
-      util::qPrint("Entry function found!");
+      if(bPrintIfFound) util::qPrint("Entry function found!\n");
     }
     if(b.first == "exit") {
       bExit = true;
-      util::qPrint("Exit Function found!");
+      if(bPrintIfFound) util::qPrint("Exit function found!\n");
     }
     if(bEntry && bExit) break;
   }
-  if(bEntry && bExit) return;
+  if(bEntry && bExit) {
+    // TODO: need to deal with multiple definitions for entry
+    // possibly just throw if defined multiple times
+    for(auto& c : mBricks["entry"].at(0).vContents) {
+      if(c == "exit") return;
+    }
+    // will auto include the exit call if excluded in the entry function
+    mBricks["entry"].at(0).vContents.push_back("exit");
+    return;
+  }
   else if(bEntry){
     basm::error("Exit Function not found!", "Define Exit function.");
   } else {

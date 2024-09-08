@@ -85,4 +85,8 @@ _start:
     mov r13, func_print
     call _func
 
+    mov r14, anotherMessage
+    mov r13, func_print
+    call _func
+
     call _exit

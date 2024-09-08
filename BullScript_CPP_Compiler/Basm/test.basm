@@ -4,6 +4,8 @@
 ; when value not set will go into .bss
 ; const variables will go into .rodata
 create const 8b message = "Hello World!\n"
+; variables are assumed to vary in value unless specfied otherwise
+; literals are assumed readOnly (will go into .rodata)
 
 ; can also do multiline create example:
 create:
@@ -40,6 +42,10 @@ end define
 ; All functions must return
 
 ; the "if" and "while" funcs will be built in
+; "condition" must be surrounded with parenthesis
+; when translating basm to nasm, will determined the jump instruction based on the comparision being made
+; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
+; comparsions are ( = , != , < , > , <= , >= )
 
 fn if << condition contents:
 	jumpFalse condition, ifEnd
@@ -130,6 +136,6 @@ fn entry:
 	print message
 	print anotherMessage
 	print aValue
-	print "A string literal\n"
-	exit
+	; print "A string literal\n"
+	exit ; exit will be called even if excluded at the end of the entry function
 end fn
