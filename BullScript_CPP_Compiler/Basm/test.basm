@@ -137,5 +137,5 @@ fn entry:
 	print anotherMessage
 	print aValue
 	; print "A string literal\n"
-	exit ; exit will be called even if excluded at the end of the entry function
+	exit; exit will be called even if excluded at the end of the entry function
 end fn

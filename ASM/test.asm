@@ -2,6 +2,7 @@ global _start
 
     section .data
 message: db "Hello world!", 10, 0
+anotherMessage: dw "Hi", 0
 
     section .text
 

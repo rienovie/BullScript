@@ -30,10 +30,10 @@ public:
 		// NOTE: will add ARM and others later
 	};
 
-	// vector of bricks because maybe will allow overwriting down the line
-	static std::map<std::string,std::vector<brick>> mBricks;
+	static std::map<std::string,brick> mBricks;
 	static std::map<std::string,asmTranslation> mTranslations;
 	static std::map<std::string,asmValue> mValues;
+	static std::unordered_set<std::string> verifiedDefined;
 	
 
 	static void compileFromFile(std::string sFile);

@@ -2,9 +2,10 @@
 #include <algorithm>
 #include <sqlite3.h>
 
-std::map<std::string,std::vector<basm::brick>> basm::mBricks {};
+std::map<std::string,basm::brick> basm::mBricks {};
 std::map<std::string,basm::asmTranslation> basm::mTranslations {};
 std::map<std::string,basm::asmValue> basm::mValues {};
+std::unordered_set<std::string> basm::verifiedDefined {};
 
 void basm::compileFromFile(std::string sFile) {
   loadTranslations();
@@ -15,12 +16,12 @@ void basm::compileFromFile(std::string sFile) {
 
   printAllBricks();
 
-  branchOutFromBrick(mBricks["entry"].at(0));
+  branchOutFromBrick(mBricks["entry"]);
 
 }
 
 void basm::branchOutFromBrick(basm::brick branchBrick) {
-   // TODO: working here
+  //   TODO: working here
 }
 
 void basm::loadTranslations() {
@@ -101,11 +102,11 @@ void basm::verifyEntryAndExitBricks(bool bPrintIfFound) {
   if(bEntry && bExit) {
     // TODO: need to deal with multiple definitions for entry
     // possibly just throw if defined multiple times
-    for(auto& c : mBricks["entry"].at(0).vContents) {
+    for(auto& c : mBricks["entry"].vContents) {
       if(c == "exit") return;
     }
     // will auto include the exit call if excluded in the entry function
-    mBricks["entry"].at(0).vContents.push_back("exit");
+    mBricks["entry"].vContents.push_back("exit");
     return;
   }
   else if(bEntry){
@@ -191,9 +192,7 @@ void basm::buildBricksFromFile(std::string sFile) {
 
 void basm::printAllBricks() {
   for (auto &m : mBricks) {
-    for (auto &b : m.second) {
-      printBrick(b);
-    }
+    printBrick(m.second);
   }
 }
 
@@ -327,7 +326,7 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
   }
 
   if (outputBrick.sName != "UNDEFINED")
-    mBricks[outputBrick.sName].push_back(outputBrick);
+    mBricks[outputBrick.sName] = outputBrick;
 }
 
 void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawContents) {
