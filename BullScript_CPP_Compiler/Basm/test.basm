@@ -15,61 +15,48 @@ create:
 	const 8b immutableMessage = "Immute Hello!\n"
 end create
 
-; define is a container
-; define (keyword to call) << contents (keyword)
-; "contents" keyword is a "func" that takes muliple lines as an input
-; after container defined, the text following with a : afterwards is how you would call it
-; this allows pre & post actions to a function call
-; I think this'll allow other things as well but will have to experiment
-; These two defines "func" & "fn" will be built-in for Basm and BullScript
+; define is a container to create a container
+; define (new container keyword used to call) << (attributes)
 
 ; this is for basic Basm functions
-define func << contents :
-	tempInput input
+define func:
+	move tempInput input
 	stackPush
-	input tempInput
-	contents
-	tempOutput output
+	move input tempInput
+	call regFunc
+	move tempOutput output
 	stackPop
-	output tempOutput
-end define
-
-; this is a raw Basm function
-define fn << contents :
-	contents
+	move output tempOutput
+	return
 end define
 
 ; All functions must return
 
-; the "if" and "while" funcs will be built in
 ; "condition" must be surrounded with parenthesis
-; when translating basm to nasm, will determined the jump instruction based on the comparision being made
+; when "condition" is called inside a function, will assume condition input
 ; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
 ; comparsions are ( = , != , < , > , <= , >= )
 
-fn if << condition contents:
-	jumpFalse condition, ifEnd
+; inline means instead of creating a function will basically be copy-paste at the location it is called
+; inline functions are container functions
+; the contents keyword is required
+; inline functions cannot return
+
+fn if << inline:
+	jumpCondition ifEnd
 	contents
 	label ifEnd
-
-	return
 end fn
 
-fn while << condition contents :
+fn while << inline:
 	label whileJump
 	if condition :
 		contents
 		jump label whileJump
 	end if
-
-	return
 end fn
 
 fn stackPush:
-	; not sure on this name, but it's for rbx
-	; I think I'll probably have multiple aliases for the same regs
-	; ie rax(regA, sys)
-	; I don't want the actual names to be used because I want this to be universal asm
 	pop reg1
 
 	; This is equivallent to:
@@ -95,12 +82,12 @@ fn stackPop:
 end fn
 
 func length:
-	output input
+	move output input
 	; conditions must be surrounded with parenthesis
 	while (byte output != 0) :
 		increment output
 	end while
-	output subtract input
+	subtract output input
 	
 	return
 end func
@@ -114,14 +101,17 @@ func print:
 	; call style one:
 	syscall $write, #stdout, input, length input
 
+	; will print newline
+	syscall $write, #stdout, "\n", 1
+
 	; call style two:
-	sys $write
-	arg1 #stdout
-	arg2 input
-	arg3 length input
+	move sys $write
+	move arg1 #stdout
+	move arg2 input
+	move arg3 length input
+	; call by itself is assumed "syscall"
 	call
 
-	; TODO add a default \n to each print
 
 	return
 end func

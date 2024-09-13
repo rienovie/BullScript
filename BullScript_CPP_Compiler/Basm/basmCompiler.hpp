@@ -8,8 +8,10 @@
 
 class basm {
 public:
-	// TODO: give bricks line numbers so error messages can be more useful
 	struct brick {
+		// NOTE: originally wanted to have line numbers for errors and such, however
+		// basm will be under bullscript and if you get an error in basm giving a line number
+		// it would add confusion when working with bullscript
 		std::string sKeyword;
 		std::vector<std::string> vAttributes;
 		std::string sName;

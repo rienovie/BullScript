@@ -287,7 +287,7 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
         sBuild.push_back(currentChar);
     }
 
-    if (sBuild.length() > 0) {
+    if (sBuild.length() > 0 && !util::onlyContains(sBuild, ' ')) {
       outputBrick.vContents.push_back(sBuild);
       sBuild.clear();
     }
@@ -319,7 +319,7 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
         sBuild.push_back(currentChar);
       }
     }
-    if (sBuild.length() > 0) {
+    if (sBuild.length() > 0 && !util::onlyContains(sBuild, ' ')) {
       outputBrick.vContents.push_back(sBuild);
       sBuild.clear();
     }
