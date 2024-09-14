@@ -4,6 +4,8 @@
 
 I think this'll be the easiest / shortest thing to start on, and I'll be able to build outward from here.
 
+NOTE: when you translate labels make sure you number them so there will be no accidental jumping
+
 Steps for Basm compiler:
 
   [x]Load Translations

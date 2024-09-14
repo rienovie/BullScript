@@ -29,7 +29,7 @@ void basm::loadTranslations() {
   sqlite3_stmt* statement;
   std::string sName;
 
-  int openDB = sqlite3_open("../Basm/basmTranslation.db", &db);
+  int openDB = sqlite3_open("Basm/basmTranslation.db", &db);
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);

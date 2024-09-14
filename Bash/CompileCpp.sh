@@ -5,7 +5,23 @@
 
 echo "Bull CPP Compile"
 
-cd BullScript_CPP_Compiler/build
+utilSubMod=$(pwd)/BullScript_CPP_Compiler/Util/util.cpp
+
+if [ ! -f "$utilSubMod" ]; then
+	echo "Error! Util Submodule not found! Please update git submodules."
+	exit 1
+fi
+
+buildDir=BullScript_CPP_Compiler/build
+
+if [ -d "$buildDir" ]; then
+	cd "$buildDir"
+else
+	cd BullScript_CPP_Compiler
+	mkdir "build"
+	cd build
+	cmake ..
+fi
 
 cmake --build .
 
@@ -14,11 +30,12 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo $'Bull CPP Compile success!\n\n'
+echo $'Bull CPP Compile success!'
 
 if [ $# -gt 0 ] && [ $1 = "run" ]; then
-	echo $'Attempting to compile ".../Basm/test.basm"\n'
-	./bull_cpp ~/projects/BullScript/BullScript_CPP_Compiler/Basm/test.basm test
+	cd ..
+	testFile=$(pwd)/Basm/test.basm
+	./build/bull_cpp $testFile
 fi
 
 if [ $? -ne 0 ]; then
