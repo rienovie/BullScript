@@ -262,29 +262,33 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
       }
     }
   } else if (sBrickName == "define") {
-    std::vector<std::string> vElements;
     bool bInContent = false;
 
     for (int i = 0; i < sBrickRawContents.length(); i++) {
       currentChar = sBrickRawContents[i];
       if (bInContent) {
         if (currentChar == '\n') {
-          if (sBuild.length() > 0)
+          if (sBuild.length() > 0) {
             outputBrick.vContents.push_back(sBuild);
+          }
           sBuild.clear();
-        } else if (currentChar != ':')
+        } else {
           sBuild.push_back(currentChar);
-
-      } else if ((currentChar == ' ' || currentChar == '<') && sBuild.length() > 0) {
-        if (outputBrick.sName == "UNDEFINED")
-          outputBrick.sName = sBuild;
-        else {
-          outputBrick.vAttributes.push_back(sBuild);
-          bInContent = true;
         }
-        sBuild.clear();
-      } else if (currentChar != ' ' && currentChar != '<')
+      } else if (currentChar == '\n') {
+        bInContent = true;
+      } else if (currentChar == ' ' || currentChar == '<') {
+        if(sBuild.length() > 0) {
+          if(outputBrick.sName == "UNDEFINED") {
+            outputBrick.sName = sBuild;
+          } else {
+            outputBrick.vAttributes.push_back(sBuild);
+          }
+          sBuild.clear();
+        }
+      } else if (currentChar != ':') {
         sBuild.push_back(currentChar);
+      }
     }
 
     if (sBuild.length() > 0 && !util::onlyContains(sBuild, ' ')) {
