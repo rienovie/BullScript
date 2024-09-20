@@ -47,7 +47,7 @@ private:
 		error(std::string sMessage, std::string sSolution),
 		printBrick(brick toPrint),
 		buildBricksFromFile(std::string sFile),
-		verifyEntryAndExitBricks(bool bPrintIfFound = true),
+		verifyEntryAndExitBricks(),
 		loadTranslations(),
 		printTranslations(),
 		printAllBricks(),

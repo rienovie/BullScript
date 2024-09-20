@@ -3,17 +3,22 @@
 #include <filesystem>
 #include <string>
 #include "Basm/basmCompiler.hpp"
+#include "logger.hpp"
 
 int main(int argc, char *argv[]) {
-    util::qPrint("\n\nBull_CPP Compiler - Pre-Alpha\n");
+    Log = new logClass;
+    Log->Options.bVerbose = true;
+    Log->Options.bPrint = true;
+    Log->Options.bThrowOnError = true;
+
+    Log->n("Bull_CPP Compiler - Pre-Alpha");
     if (argc < 2) {
         std::string sFullCommand = "";
         for(int i = 0; i < argc; i++) {
             sFullCommand.append(argv[i]);
             sFullCommand.push_back(' ');
         }
-        util::qPrint("Must specify source and output.\n\nbull_cpp {source} {output}\nCommand given:", sFullCommand, "\n");
-        return 1;
+        Log->e("Must specify source and output.\n\nbull_cpp {source} {output}\nCommand given:",sFullCommand,"\n");
     }
     if(argc < 3) {
         // TODO: make third command be the name of the output
@@ -25,8 +30,7 @@ int main(int argc, char *argv[]) {
         arg = util::argvToString(argv[i]);
         if(i == 1) {
             if (!(util::endsWith(arg, ".basm"))) {
-                util::qPrint("Source must be .basm file. Arg input: ", arg);
-                return 1;
+                Log->e("Source must be .basm file. Arg input:",arg);
             }
             if(arg.at(0) != '/') {
                 arg = std::string(std::filesystem::current_path()) + arg;
@@ -34,6 +38,8 @@ int main(int argc, char *argv[]) {
             basm::compileFromFile(arg);
         }
     }
+
+    delete Log;
 
     return 0;
 }

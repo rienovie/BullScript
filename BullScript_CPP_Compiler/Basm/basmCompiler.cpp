@@ -1,6 +1,8 @@
 #include "basmCompiler.hpp"
 #include <algorithm>
 #include <sqlite3.h>
+#include <stop_token>
+#include "../logger.hpp"
 
 std::map<std::string,basm::brick> basm::mBricks {};
 std::map<std::string,basm::asmTranslation> basm::mTranslations {};
@@ -9,7 +11,7 @@ std::unordered_set<std::string> basm::verifiedDefined {};
 
 void basm::compileFromFile(std::string sFile) {
   loadTranslations();
-  // printTranslations();
+  printTranslations();
 
   buildBricksFromFile(sFile);
   verifyEntryAndExitBricks();
@@ -75,27 +77,27 @@ void basm::loadTranslations() {
 }
 
 void basm::printTranslations() {
-  util::qPrint("\nMain table:");
+  Log->v("Main table:");
   for(auto& i : mTranslations) {
-    util::qPrint(i.second.type,i.first,i.second.x86_64);
+    Log->v(i.second.type,i.first,i.second.x86_64);
   }
-  util::qPrint("\nValue table:");
+  Log->v("Value table:");
   for(auto& i : mValues) {
-    util::qPrint(i.first,i.second.x86_64);
+    Log->v(i.first,i.second.x86_64);
   }
-  util::qPrint("\n");
+  Log->v("\n");
 }
 
-void basm::verifyEntryAndExitBricks(bool bPrintIfFound) {
+void basm::verifyEntryAndExitBricks() {
   bool bEntry = false, bExit = false;
   for(auto& b : mBricks) {
     if(b.first == "entry") {
       bEntry = true;
-      if(bPrintIfFound) util::qPrint("Entry function found!\n");
+      Log->v("Entry function found!");
     }
     if(b.first == "exit") {
       bExit = true;
-      if(bPrintIfFound) util::qPrint("Exit function found!\n");
+      Log->v("Exit function found!");
     }
     if(bEntry && bExit) break;
   }
@@ -364,19 +366,17 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
 }
 
 void basm::error(std::string sMessage, std::string sSolution) {
-  util::qPrint("Basm Error!\n", sMessage);
-  util::qPrint("\nPossible solution:\n", sSolution, "\n\n");
-  throw;
+  Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n\n");
 }
 
 void basm::printBrick(basm::brick toPrint) {
-  util::qPrint("NAM", toPrint.sName);
-  util::qPrint("KEY", toPrint.sKeyword);
+  Log->v("NAM",toPrint.sName);
+  Log->v("KEY",toPrint.sKeyword);
   for (auto &i : toPrint.vAttributes) {
-    util::qPrint("ATT", i);
+    Log->v("ATT", i);
   }
   for (auto &i : toPrint.vContents) {
-    util::qPrint("CON", i);
+    Log->v("CON",i);
   }
-  util::qPrint("\n");
+  Log->v("\n");
 }

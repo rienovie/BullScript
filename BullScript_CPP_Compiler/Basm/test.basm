@@ -19,7 +19,7 @@ end create
 ; define (new container keyword used to call) << (attributes)
 
 ; this is for basic Basm functions
-define func :
+define func:
 	move tempInput input
 	stackPush
 	move input tempInput

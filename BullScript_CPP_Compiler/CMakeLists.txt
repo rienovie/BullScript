@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
 
 find_package(SQLite3 REQUIRED)
 
-set(SOURCES main.cpp Util/util.cpp Basm/basmCompiler.cpp)
+set(SOURCES main.cpp Util/util.cpp Basm/basmCompiler.cpp logger.cpp)
 
 add_executable(bull_cpp ${SOURCES})
 
