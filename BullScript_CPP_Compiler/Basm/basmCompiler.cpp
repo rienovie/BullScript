@@ -16,7 +16,9 @@ void basm::compileFromFile(std::string sFile) {
   buildBricksFromFile(sFile);
   verifyEntryAndExitBricks();
 
-  printAllBricks();
+  // With verbose will print each brick without having to call this function
+  // This function can be used to print all after the fact.
+  // printAllBricks();
 
   branchOutFromBrick(mBricks["entry"]);
 
@@ -27,23 +29,31 @@ void basm::branchOutFromBrick(basm::brick branchBrick) {
 }
 
 void basm::loadTranslations() {
+  Log->n("Loading translations...");
+
   sqlite3* db;
   sqlite3_stmt* statement;
   std::string sName;
 
+  Log->v("Attempting to open SQLite DB file...");
   int openDB = sqlite3_open("Basm/basmTranslation.db", &db);
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);
     error("Error loading basmTranslation DB! Error: " + err, "Verify DB file exists with name \"basmTranslation.db\"");
   }
+  Log->v("SQLite DB file:","Basm/basmTranslation.db","successfully opened.");
+
+  Log->v("Attemping to prepare DB Main table...");
   openDB = sqlite3_prepare_v2(db,"SELECT * FROM Main;",-1,&statement,NULL);
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);
     error("Error preparing basmTranslation DB Main Table! Error: " + err, "Verify prepare statement in compiler's code.");
   }
+  Log->v("DB Main table successfully prepared.");
 
+  Log->v("Stepping thru Main table...");
   asmTranslation transToAdd;
   while((openDB = sqlite3_step(statement)) == SQLITE_ROW) {
     transToAdd.x86_64.clear();
@@ -56,14 +66,18 @@ void basm::loadTranslations() {
     mTranslations[sName] = transToAdd;
   }
   sqlite3_finalize(statement);
+  Log->v("Main table finalized.");
 
+  Log->v("Attempting to prepare DB Vals table...");
   openDB = sqlite3_prepare_v2(db,"SELECT * FROM Vals;",-1,&statement,NULL);
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);
     error("Error preparing basmTranslation DB Values Table! Error: " + err, "Verify prepare statement in compiler's code.");
   }
+  Log->v("DB Vals table successfully prepared.");
 
+  Log->v("Stepping thru Vals table...");
   asmValue valToAdd;
   while((openDB = sqlite3_step(statement)) == SQLITE_ROW) {
     sName.clear();
@@ -72,23 +86,33 @@ void basm::loadTranslations() {
     mValues[sName] = valToAdd;
   }
   sqlite3_finalize(statement);
+  Log->v("Vals table finalized.");
 
+  Log->v("Closing DB.");
   sqlite3_close(db);
+  Log->v("DB closed.");
+
+  Log->n("Finished loading translations.");
 }
 
 void basm::printTranslations() {
+  Log->v("Printing translation tables...");
+  Log->v("\n");
   Log->v("Main table:");
   for(auto& i : mTranslations) {
     Log->v(i.second.type,i.first,i.second.x86_64);
   }
+  Log->v("\n");
   Log->v("Value table:");
   for(auto& i : mValues) {
     Log->v(i.first,i.second.x86_64);
   }
   Log->v("\n");
+  Log->v("Finished printing translation tables.");
 }
 
 void basm::verifyEntryAndExitBricks() {
+  Log->v("Verifying Entry and Exit bricks exist...");
   bool bEntry = false, bExit = false;
   for(auto& b : mBricks) {
     if(b.first == "entry") {
@@ -104,6 +128,7 @@ void basm::verifyEntryAndExitBricks() {
   if(bEntry && bExit) {
     // TODO: need to deal with multiple definitions for entry
     // possibly just throw if defined multiple times
+    Log->v("Entry and Exit bricks exist.");
     for(auto& c : mBricks["entry"].vContents) {
       if(c == "exit") return;
     }
@@ -120,6 +145,7 @@ void basm::verifyEntryAndExitBricks() {
 }
 
 void basm::buildBricksFromFile(std::string sFile) {
+  Log->n("Building bricks from file:",sFile);
   std::string
     sLine,
     sBuild,
@@ -129,6 +155,7 @@ void basm::buildBricksFromFile(std::string sFile) {
   char curChar;
   int iLineLength;
 
+  Log->v("Reading file by line...");
   MACRO_ReadFileByLine(sFile, sLine, {
     iLineLength = sLine.length();
     sBuild.clear();
@@ -190,6 +217,9 @@ void basm::buildBricksFromFile(std::string sFile) {
       }
     }
   });
+  Log->v("Finished reading file by line.");
+
+  Log->n("All bricks finished building.");
 }
 
 void basm::printAllBricks() {
@@ -199,6 +229,7 @@ void basm::printAllBricks() {
 }
 
 void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline) {
+  Log->v("Building brick...");
   brick outputBrick;
   outputBrick.sKeyword = sBrickName;
   outputBrick.sName = "UNDEFINED";
@@ -208,9 +239,12 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
 
   if (sBrickName == "create") {
     if (bMultiline) {
+      Log->v("Brick is multiline, building per line...");
       for (auto &line : util::splitStringOnChar(sBrickRawContents, '\n')) {
         buildBrick("create", line, false);
       }
+      Log->v("Brick multiline finished.");
+      return;
     } else {
       bool bEqualOnLine = util::contains(sBrickRawContents, '=');
       bool bInsideParen = false;
@@ -278,7 +312,9 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
           sBuild.push_back(currentChar);
         }
       } else if (currentChar == '\n') {
-        bInContent = true;
+        if(outputBrick.sName != "UNDEFINED") {
+          bInContent = true;
+        }
       } else if (currentChar == ' ' || currentChar == '<') {
         if(sBuild.length() > 0) {
           if(outputBrick.sName == "UNDEFINED") {
@@ -331,11 +367,19 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
     }
   }
 
-  if (outputBrick.sName != "UNDEFINED")
+  if (outputBrick.sName != "UNDEFINED") {
     mBricks[outputBrick.sName] = outputBrick;
+    Log->v("Brick",outputBrick.sName,"built successfully and added to mBricks. Full brick:");
+    printBrick(outputBrick);
+  } else {
+    Log->w("Brick with name 'UNDEFINED' has contents:","\n" + sBrickRawContents);
+    Log->w("Brick was not added to mBricks.");
+    Log->w("\n");
+  }
 }
 
 void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawContents) {
+  Log->v("Sanitizing Raw Brick:",sBrickName,"with contents:","\n" + sBrickRawContents,"\n");
   util::removeAllOfChar(sBrickRawContents, '\t');
 
   std::string sBuild = "", sOutput;
@@ -363,6 +407,7 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
   if (sOutput[sOutput.length() - 1] == '\n')
     sOutput.pop_back();
   sBrickRawContents = sOutput;
+  Log->v("Sanitized to:","\n" + sBrickRawContents);
 }
 
 void basm::error(std::string sMessage, std::string sSolution) {

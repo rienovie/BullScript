@@ -7,6 +7,7 @@
 
 int main(int argc, char *argv[]) {
     Log = new logClass;
+    Log->Options.sOutputLocation = "logs/";
     Log->Options.bVerbose = true;
     Log->Options.bPrint = true;
     Log->Options.bThrowOnError = true;
