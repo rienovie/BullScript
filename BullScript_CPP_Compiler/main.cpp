@@ -1,16 +1,20 @@
 #include "main.hpp"
 #include "Util/util.hpp"
 #include <filesystem>
+#include <memory>
 #include <string>
 #include "Basm/basmCompiler.hpp"
 #include "logger.hpp"
 
 int main(int argc, char *argv[]) {
-    Log = new logClass;
+    Log = std::make_unique<logClass>();
     Log->Options.sOutputLocation = "logs/";
     Log->Options.bVerbose = true;
     Log->Options.bPrint = true;
     Log->Options.bThrowOnError = true;
+    Log->Options.iMaxLogCount = 3;
+
+    Log->initialize();
 
     Log->n("Bull_CPP Compiler - Pre-Alpha");
     if (argc < 2) {
@@ -39,8 +43,6 @@ int main(int argc, char *argv[]) {
             basm::compileFromFile(arg);
         }
     }
-
-    delete Log;
 
     return 0;
 }

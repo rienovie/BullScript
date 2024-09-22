@@ -10,29 +10,37 @@ struct logOptsStruct {
 		bPrint = true,
 		bThrowOnError = false;
 	std::string sOutputLocation = "logs/";
+	int iMaxLogCount = 10;
 };
 
 class logClass {
 public:
 
 	static logOptsStruct Options;
+	static bool bInitialized;
 
 	logClass() {
 		sOutputFile = util::getCurrentDateTime();
 		if(!std::filesystem::exists(Options.sOutputLocation)) {
 			std::filesystem::create_directory(Options.sOutputLocation);
 		}
-		outFile.open(Options.sOutputLocation + sOutputFile);
 	}
 
 	~logClass() {
 		outFile.close();
 	}
+	
+	void initialize();
+
 
 	// Log Type "Normal"
 	// Will always log
 	template <typename... Args>
 	static void n(Args... inputArgs) {
+		if(!bInitialized) {
+			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			return;
+		}
 		if(Options.bPrint) { util::qPrint("N:",inputArgs...); }
 		writeToFile("N:",inputArgs...);
 	}
@@ -41,6 +49,10 @@ public:
 	// Will only log with verbose option
 	template <typename... Args>
 	static void v(Args... inputArgs) {
+		if(!bInitialized) {
+			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			return;
+		}
 		if(!Options.bVerbose) { return; }
 		if(Options.bPrint) { util::qPrint("V:",inputArgs...); }
 		writeToFile("V:",inputArgs...);
@@ -50,6 +62,10 @@ public:
 	// Will log with warning tag
 	template <typename... Args>
 	static void w(Args... inputArgs) {
+		if(!bInitialized) {
+			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			return;
+		}
 		if(Options.bPrint) { util::qPrint("W:",inputArgs...); }
 		writeToFile("W:",inputArgs...);
 	}
@@ -59,6 +75,10 @@ public:
 	// Will throw with throw option
 	template <typename... Args>
 	static void e(Args... inputArgs) {
+		if(!bInitialized) {
+			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			return;
+		}
 		if(Options.bPrint) { util::qPrint("E:",inputArgs...); }
 		writeToFile("E:",inputArgs...);
 		if(Options.bThrowOnError) {
@@ -82,7 +102,9 @@ private:
 		outFile << arg;
 		outFile << "\n";
 	}
+
+	static bool compareFileNames(std::string sCurrent, std::string sNew);
 };
 
-static logClass* Log = nullptr;
+static std::unique_ptr<logClass> Log = nullptr;
 
