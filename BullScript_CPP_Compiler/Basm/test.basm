@@ -11,7 +11,7 @@ create const 8b message = "Hello World!\n"
 create:
 	8b anotherMessage = "Hello again!\n"
 	8b aValue = 8 ; TODO: check print with 101 to see if working correctly
-	16b unintializedVariable
+	16 16b unintializedVariable ; order for 16 or 16b doesn't matter as long as they're before the name
 	const 8b immutableMessage = "Immute Hello!\n"
 end create
 

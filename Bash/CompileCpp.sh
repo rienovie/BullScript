@@ -30,7 +30,7 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo $'Bull CPP Compile success!'
+echo $'Bull CPP Compile success!\n'
 
 if [ $# -gt 0 ] && [ $1 = "run" ]; then
 	cd ..

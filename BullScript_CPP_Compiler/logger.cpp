@@ -15,7 +15,7 @@ void logClass::initialize() {
             ++iFileCount;
         }
 	}
-	if(iFileCount > Options.iMaxLogCount) {
+	if(iFileCount > Options.iMaxLogCount - 1) {
         std::filesystem::path oldestFile = "";
         std::string itemFilename = "";
 

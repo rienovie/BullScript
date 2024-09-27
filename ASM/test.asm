@@ -1,6 +1,12 @@
 
 global _start
 
+    section .bss
+unintializedVariable: resd 16
+
+    section .rodata
+immutableMessage: db "Immute Hello!", 10, 0
+
     section .data
 message: db "Hello world!", 10, 0
 anotherMessage: dw "Hi", 0

@@ -1,13 +1,18 @@
 #include "basmCompiler.hpp"
 #include <algorithm>
 #include <sqlite3.h>
-#include <stop_token>
 #include "../logger.hpp"
 
 std::map<std::string,basm::brick> basm::mBricks {};
 std::map<std::string,basm::asmTranslation> basm::mTranslations {};
 std::map<std::string,basm::asmValue> basm::mValues {};
 std::unordered_set<std::string> basm::verifiedDefined {};
+std::unordered_set<std::string> basm::currentBranches {};
+std::unordered_set<std::string> basm::currentDefines {};
+std::vector<std::string> basm::vSection_data;
+std::vector<std::string> basm::vSection_bss;
+std::vector<std::string> basm::vSection_rodata;
+std::vector<std::string> basm::vSection_text;
 
 void basm::compileFromFile(std::string sFile) {
   loadTranslations();
@@ -16,16 +21,100 @@ void basm::compileFromFile(std::string sFile) {
   buildBricksFromFile(sFile);
   verifyEntryAndExitBricks();
 
-  // With verbose will print each brick without having to call this function
-  // This function can be used to print all after the fact.
-  // printAllBricks();
-
+  Log->n("Starting branch out...");
   branchOutFromBrick(mBricks["entry"]);
+  // Log->n("Branch out completed.");
 
 }
 
-void basm::branchOutFromBrick(basm::brick branchBrick) {
-  //   TODO: working here
+void basm::defineBrick(basm::brick& currentBrick) {
+  Log->v(currentBrick.sName,"defining started...");
+
+  if(currentDefines.contains(currentBrick.sName)) {
+    Log->v(currentBrick.sName,"is already being defined.");
+    return;
+  }
+
+  currentDefines.insert(currentBrick.sName);
+
+  std::string sBuild = "";
+  if(currentBrick.sKeyword == "create") {
+    std::string aLineStart[2];
+    std::string sFinalLine = "";
+    bool bConst = false;
+    sBuild.clear();
+
+    aLineStart[0] = currentBrick.sName + ": ";
+    aLineStart[1] = "";
+    for(auto& i : currentBrick.vAttributes) {
+      if(i == "const") {
+        bConst = true;
+      } else if(i.ends_with('b')) {
+        if(aLineStart[1].length() > 0) {
+          error("Attribute bit size for " + currentBrick.sName + " is defined twice.", "Only specify a single size of 8b 16b 32b 64b.");
+        }
+        aLineStart[1] = mTranslations.at(i).x86_64 + " ";
+      } else {
+        sBuild.append(i + " ");
+      }
+    }
+    sFinalLine.append(aLineStart[0] + aLineStart[1] + sBuild);
+
+    if(currentBrick.vContents.size() < 1) {
+      vSection_bss.push_back(sFinalLine);
+    } else {
+      for(auto& i : currentBrick.vContents) {
+        // TODO: account for "\n" here
+        sFinalLine.append(i + " ");
+      }
+      if(bConst) {
+        vSection_rodata.push_back(sFinalLine);
+      } else {
+        vSection_data.push_back(sFinalLine);
+      }
+    }
+
+  } else if(currentBrick.sKeyword == "define") {
+
+  } else if(currentBrick.sKeyword == "fn") {
+
+  }
+
+  currentDefines.erase(currentBrick.sName);
+
+  Log->v(currentBrick.sName,"defined.");
+}
+
+void basm::branchOutFromBrick(basm::brick& branchBrick) {
+  Log->v(branchBrick.sName, "branch called...");
+
+  if(currentBranches.contains(branchBrick.sName)) {
+    Log->v(branchBrick.sName, "branch already being worked on.");
+    return;
+  }
+
+  currentBranches.insert(branchBrick.sName);
+
+  if(branchBrick.sKeyword == "define"
+  || branchBrick.sKeyword == "fn"
+  || branchBrick.sKeyword == "create") {
+    defineBrick(branchBrick);
+  } else if(!verifiedDefined.contains(branchBrick.sKeyword)) {
+    if(!mBricks.contains(branchBrick.sKeyword)) {
+      error(branchBrick.sKeyword + " could not be found when attempting to define.", "Verify \"" + branchBrick.sKeyword + "\" is defined in the source or in the compiler database.");
+    } else {
+      branchOutFromBrick(mBricks.at(branchBrick.sKeyword));
+    }
+  }
+
+  if(!verifiedDefined.contains(branchBrick.sName)) {
+    defineBrick(branchBrick);
+  }
+
+  currentBranches.erase(branchBrick.sName);
+
+  Log->v(branchBrick.sName,"branch completed.");
+
 }
 
 void basm::loadTranslations() {
@@ -222,6 +311,8 @@ void basm::buildBricksFromFile(std::string sFile) {
   Log->n("All bricks finished building.");
 }
 
+// With verbose will print each brick without having to call this function
+// This function can be used to print all after the fact.
 void basm::printAllBricks() {
   for (auto &m : mBricks) {
     printBrick(m.second);
@@ -414,7 +505,7 @@ void basm::error(std::string sMessage, std::string sSolution) {
   Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n\n");
 }
 
-void basm::printBrick(basm::brick toPrint) {
+void basm::printBrick(basm::brick& toPrint) {
   Log->v("NAM",toPrint.sName);
   Log->v("KEY",toPrint.sKeyword);
   for (auto &i : toPrint.vAttributes) {

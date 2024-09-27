@@ -36,6 +36,12 @@ public:
 	static std::map<std::string,asmTranslation> mTranslations;
 	static std::map<std::string,asmValue> mValues;
 	static std::unordered_set<std::string> verifiedDefined;
+	static std::unordered_set<std::string> currentBranches;
+	static std::unordered_set<std::string> currentDefines;
+	static std::vector<std::string> vSection_data;
+	static std::vector<std::string> vSection_bss;
+	static std::vector<std::string> vSection_rodata;
+	static std::vector<std::string> vSection_text;
 	
 
 	static void compileFromFile(std::string sFile);
@@ -43,13 +49,14 @@ public:
 private:
 	static void
 		buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline),
+		defineBrick(brick& currentBrick),
 		sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents),
 		error(std::string sMessage, std::string sSolution),
-		printBrick(brick toPrint),
+		printBrick(brick& toPrint),
 		buildBricksFromFile(std::string sFile),
 		verifyEntryAndExitBricks(),
 		loadTranslations(),
 		printTranslations(),
 		printAllBricks(),
-		branchOutFromBrick(brick branchBrick);
+		branchOutFromBrick(brick& branchBrick);
 };
