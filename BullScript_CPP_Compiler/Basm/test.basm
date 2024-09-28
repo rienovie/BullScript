@@ -1,11 +1,14 @@
 
-; db 8b / dw 16b / dd 32b / dq 64b
+; variables are assumed to vary in value unless specfied otherwise
+; This assumption will carry to bullscript
+; Bullscript will have a enforce option that requires "mutable" for non-const variables
 ; when value set will go into .data
 ; when value not set will go into .bss
+; you must specify the size to allocate with uninitialized variables
 ; const variables will go into .rodata
+; db 8b / dw 16b / dd 32b / dq 64b
+
 create const 8b message = "Hello World!\n"
-; variables are assumed to vary in value unless specfied otherwise
-; literals are assumed readOnly (will go into .rodata)
 
 ; can also do multiline create example:
 create:
@@ -20,13 +23,13 @@ end create
 
 ; this is for basic Basm functions
 define func:
-	move tempInput input
+	move tempInput, input
 	stackPush
-	move input tempInput
+	move input, tempInput
 	call regFunc
-	move tempOutput output
+	move tempOutput, output
 	stackPop
-	move output tempOutput
+	move output, tempOutput
 	return
 end define
 
@@ -37,33 +40,35 @@ end define
 ; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
 ; comparsions are ( = , != , < , > , <= , >= )
 
-; inline means instead of creating a function will basically be copy-paste at the location it is called
-; inline functions are container functions
+; "inline" means instead of creating a function will basically be copy-paste at the location it is called
+; inlines are containers
 ; the contents keyword is required
-; inline functions cannot return
+; inlines cannot return
 
-fn if << inline:
+define if << inline:
 	jumpCondition ifEnd
 	contents
 	label ifEnd
-end fn
+end define
 
-fn while << inline:
+define while << inline:
 	label whileJump
 	if condition :
 		contents
-		jump label whileJump
+		jump whileJump
 	end if
-end fn
+end define
 
 fn stackPush:
 	pop reg1
 
-	; This is equivallent to:
+	; Starting the line with "multi" means it'll apply the first item to each
+	; on multilines use () to pass multiple values to each line
+	; Below this is equivallent to:
 	; push sys
 	; push arg1
 	; ...
-	push regA, regB, regC, regD, arg1, arg2, input, output
+	multi push regA, regB, regC, regD, arg1, arg2, input, output
 
 	push reg1
 
@@ -74,7 +79,7 @@ fn stackPop:
 	pop reg1
 
 	; Called in reverse order to maintain correct values from stack
-	pop output, input, arg2, arg1, regD, regC, regB, regA
+	multi pop output, input, arg2, arg1, regD, regC, regB, regA
 
 	push reg1
 
@@ -82,19 +87,19 @@ fn stackPop:
 end fn
 
 func length:
-	move output input
+	move output, input
 	; conditions must be surrounded with parenthesis
 	while (byte output != 0) :
 		increment output
 	end while
-	subtract output input
+	subtract output, input
 	
 	return
 end func
 
 func print:
-	; two ways to call a syscall / each of these are equivallent
-	; as this is typed, this'll be printed twice
+	; three ways to call a syscall / each of these are equivallent
+	; as this is typed, this'll be printed three times
 	; $ is used to convert to value of syscall
 	; # is used to convert to predetermined values
 
@@ -105,11 +110,17 @@ func print:
 	syscall $write, #stdout, "\n", 1
 
 	; call style two:
-	move sys $write
-	move arg1 #stdout
-	move arg2 input
-	move arg3 length input
+	move sys, $write
+	move arg1, #stdout
+	move arg2, input
+	move arg3, length input
 	; call by itself is assumed "syscall"
+	call
+
+	syscall $write, #stdout, "\n", 1
+
+	; call style three:
+	multi move (sys, $write), (arg1, #stdout), (arg2, input), (arg3, length input)
 	call
 
 
@@ -123,9 +134,6 @@ fn exit:
 end fn
 
 fn entry:
-	print message
-	print anotherMessage
-	print aValue
-	; print "A string literal\n"
+	multi print message, anotherMessage, aValue, "A string literal\n"
 	exit; exit will be called even if excluded at the end of the entry function
 end fn

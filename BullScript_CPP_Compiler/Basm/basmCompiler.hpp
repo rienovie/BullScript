@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stack>
 #include <string>
 #include <vector>
 #include <map>
@@ -38,6 +39,8 @@ public:
 	static std::unordered_set<std::string> verifiedDefined;
 	static std::unordered_set<std::string> currentBranches;
 	static std::unordered_set<std::string> currentDefines;
+	static std::unordered_set<std::string> inlineFuncs;
+	static std::stack<std::vector<std::string>> contentDefineStack;
 	static std::vector<std::string> vSection_data;
 	static std::vector<std::string> vSection_bss;
 	static std::vector<std::string> vSection_rodata;
@@ -50,6 +53,7 @@ private:
 	static void
 		buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline),
 		defineBrick(brick& currentBrick),
+		defineFunctionContents(brick& currentBrick),
 		sanitizeRawBrickData(std::string& sBrickName, std::string& sBrickRawContents),
 		error(std::string sMessage, std::string sSolution),
 		printBrick(brick& toPrint),

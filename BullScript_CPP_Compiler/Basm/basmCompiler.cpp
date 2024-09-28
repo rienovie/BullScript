@@ -9,6 +9,9 @@ std::map<std::string,basm::asmValue> basm::mValues {};
 std::unordered_set<std::string> basm::verifiedDefined {};
 std::unordered_set<std::string> basm::currentBranches {};
 std::unordered_set<std::string> basm::currentDefines {};
+std::unordered_set<std::string> basm::inlineFuncs {};
+std::stack<std::vector<std::string>> basm::contentDefineStack {};
+
 std::vector<std::string> basm::vSection_data;
 std::vector<std::string> basm::vSection_bss;
 std::vector<std::string> basm::vSection_rodata;
@@ -25,6 +28,25 @@ void basm::compileFromFile(std::string sFile) {
   branchOutFromBrick(mBricks["entry"]);
   // Log->n("Branch out completed.");
 
+}
+
+void basm::defineFunctionContents(basm::brick& currentBrick) {
+  Log->v(currentBrick.sName," contents being defined...");
+
+  std::vector<std::string> vOutput;
+  std::string sBuild = "";
+
+  // TODO: down the line add an option to compress varNames, funcNames, and lblNames to make them smaller
+  // something like fa,fb,fc,faa,fab,fac,etc...
+  vOutput.push_back("fn_" + currentBrick.sName + ":");
+
+  std::vector<std::string> vSplit;
+  for(auto& i : currentBrick.vContents) {
+    vSplit = util::splitStringOnChar(i, ' ');
+    // TODO: working here
+  }
+
+  Log->v(currentBrick.sName," contents defined.");
 }
 
 void basm::defineBrick(basm::brick& currentBrick) {
@@ -62,25 +84,47 @@ void basm::defineBrick(basm::brick& currentBrick) {
 
     if(currentBrick.vContents.size() < 1) {
       vSection_bss.push_back(sFinalLine);
+      Log->v("Added: ",sFinalLine," to bss section.");
     } else {
       for(auto& i : currentBrick.vContents) {
-        // TODO: account for "\n" here
+        // TODO: account for "\n" and others here
         sFinalLine.append(i + " ");
       }
       if(bConst) {
         vSection_rodata.push_back(sFinalLine);
+        Log->v("Added: ",sFinalLine," to rodata section.");
       } else {
         vSection_data.push_back(sFinalLine);
+        Log->v("Added: ",sFinalLine," to data section.");
       }
     }
 
   } else if(currentBrick.sKeyword == "define") {
-
+    if(util::contains(currentBrick.vAttributes,std::string("inline"))) {
+      Log->v(currentBrick.sName," is inline. Adding to list.");
+      if(util::contains(currentBrick.vContents,std::string("return"))) {
+        error(currentBrick.sName + " attempts to return but is inline.", "Inlines cannot return.\nRemove inline or remove return.");
+      }
+      inlineFuncs.insert(currentBrick.sName);
+    } else {
+      Log->v(currentBrick.sName," is a function.");
+      if(!util::contains(currentBrick.vContents,std::string("return"))) {
+        Log->w(currentBrick.sName, " does not contain a return. Adding one because functions must return. This might cause issues.");
+        currentBrick.vContents.push_back("return");
+      }
+      defineFunctionContents(currentBrick);
+    }
   } else if(currentBrick.sKeyword == "fn") {
-
+    Log->v(currentBrick.sName, " is a function.");
+    if(!util::contains(currentBrick.vContents,std::string("return"))) {
+      Log->w(currentBrick.sName, " does not contain a return. Adding one because functions must return. This might cause issues.");
+      currentBrick.vContents.push_back("return");
+    }
+    defineFunctionContents(currentBrick);
   }
 
   currentDefines.erase(currentBrick.sName);
+  verifiedDefined.insert(currentBrick.sName);
 
   Log->v(currentBrick.sName,"defined.");
 }
@@ -222,6 +266,7 @@ void basm::verifyEntryAndExitBricks() {
       if(c == "exit") return;
     }
     // will auto include the exit call if excluded in the entry function
+    Log->w("Entry function does not call exit. Adding at end of function.");
     mBricks["entry"].vContents.push_back("exit");
     return;
   }
