@@ -1,5 +1,4 @@
 #include "basmCompiler.hpp"
-#include <algorithm>
 #include <sqlite3.h>
 #include "../logger.hpp"
 
@@ -116,7 +115,7 @@ void basm::defineBrick(basm::brick& currentBrick) {
     }
   } else if(currentBrick.sKeyword == "fn") {
     Log->v(currentBrick.sName, " is a function.");
-    if(!util::contains(currentBrick.vContents,std::string("return"))) {
+    if(!util::contains(currentBrick.vContents,std::string("return")) && currentBrick.sName != "entry" && currentBrick.sName != "exit") {
       Log->w(currentBrick.sName, " does not contain a return. Adding one because functions must return. This might cause issues.");
       currentBrick.vContents.push_back("return");
     }
@@ -285,7 +284,10 @@ void basm::buildBricksFromFile(std::string sFile) {
     sBuild,
     sCurrentBrickName,
     sCurrentBrick;
-  bool bBrickStarted = false, bCompleteBrick = false, bMultiLineBrick = false;
+  bool
+    bBrickStarted = false,
+    bCompleteBrick = false,
+    bMultiLineBrick = false;
   char curChar;
   int iLineLength;
 
@@ -304,12 +306,12 @@ void basm::buildBricksFromFile(std::string sFile) {
       sBuild.push_back(curChar);
       if (bBrickStarted) {
         if (bMultiLineBrick) {
-          if (sBuild == "end" && sLine.find(sCurrentBrickName) != sLine.npos) {
+          if (sBuild == "}" ) {
             bCompleteBrick = true;
             break; // leave line
           }
         } else {
-          if (curChar == ':') {
+          if (curChar == '{') {
             bMultiLineBrick = true;
             break;
           }
@@ -319,13 +321,15 @@ void basm::buildBricksFromFile(std::string sFile) {
           }
         }
       } else {
-        if (sBuild.length() > 1) {
-          if (curChar == ' ' || curChar == ':') {
-            sBuild.pop_back();
+        if (sBuild.length() > 0) {
+          if (curChar == ' ' || curChar == '{' || curChar == '}') {
+            if(curChar == ' ' || curChar == '{') {
+              sBuild.pop_back();
+            }
             sCurrentBrickName = sBuild;
             sBuild.clear();
             bBrickStarted = true;
-            if (curChar == ':') {
+            if (curChar == '{') {
               bMultiLineBrick = true;
             }
           }
@@ -336,9 +340,7 @@ void basm::buildBricksFromFile(std::string sFile) {
     if (bBrickStarted) {
       sCurrentBrick.push_back('\n');
       if (bCompleteBrick) {
-        if (!bMultiLineBrick) {
-          sCurrentBrick.append(sBuild);
-        }
+        sCurrentBrick.append(sBuild);
         sanitizeRawBrickData(sCurrentBrickName, sCurrentBrick);
         buildBrick(sCurrentBrickName, sCurrentBrick, bMultiLineBrick);
         sCurrentBrick.clear();
@@ -365,6 +367,9 @@ void basm::printAllBricks() {
 }
 
 void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline) {
+  if(sBrickRawContents.length() < 2) {
+    return; // this is here to catch single index lines from attempting to define
+  }
   Log->v("Building brick...");
   brick outputBrick;
   outputBrick.sKeyword = sBrickName;
@@ -382,55 +387,72 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
       Log->v("Brick multiline finished.");
       return;
     } else {
-      bool bEqualOnLine = util::contains(sBrickRawContents, '=');
-      bool bInsideParen = false;
-      for (int i = sBrickRawContents.length() - 1; i > -1; i--) {
+      bool bInsideQuotes = false;
+      int iCurrentSection = 0; // 0-Name, 1-Attributes, 2-Value
+      for (int i = 0; i < sBrickRawContents.length(); i++) {
         currentChar = sBrickRawContents[i];
-        if (bInsideParen) {
-          if (i == 0) {
-            std::string sErrorOut;
-            if (currentChar == '\"') {
-              sErrorOut.append(
-                  "Found 0 index \" on a line while trying to build brick ");
+        if(iCurrentSection < 2 && (currentChar == ':' || currentChar == '=')) {
+          if(sBuild.length() > 0) {
+            if(iCurrentSection == 0) {
+              outputBrick.sName = sBuild;
+            } else if(iCurrentSection == 1) {
+              outputBrick.vAttributes.push_back(sBuild);
             } else {
-              sErrorOut.append(
-                  "Error parsing with a \" while trying to build brick ");
+              outputBrick.vContents.push_back(sBuild);
             }
-            sErrorOut.append(sBrickName);
-            sErrorOut.append("\n\nBrick Contents:\n");
-            sErrorOut.append(sBrickRawContents);
-
-            error(sErrorOut,
-                  "Verify Brick " + sBrickName + " has proper quotation");
-          } else if (currentChar == '"' && sBrickRawContents[i - 1] != '\\') {
-            bInsideParen = false;
-          }
-          sBuild.push_back(currentChar);
-        } else if (currentChar == '\"') {
-          bInsideParen = true;
-          sBuild.push_back(currentChar);
-        } else if ((currentChar == ' ' || currentChar == '=') && sBuild.length() > 0) {
-          if (bEqualOnLine && i >= sBrickRawContents.find('=')) {
-            std::reverse(sBuild.begin(), sBuild.end());
-            outputBrick.vContents.push_back(sBuild);
-            sBuild.clear();
-          } else if (outputBrick.sName == "UNDEFINED") {
-            std::reverse(sBuild.begin(), sBuild.end());
-            outputBrick.sName = sBuild;
-            sBuild.clear();
-          } else {
-            std::reverse(sBuild.begin(), sBuild.end());
-            outputBrick.vAttributes.push_back(sBuild);
             sBuild.clear();
           }
-        } else {
-          if (currentChar != ' ' && currentChar != '=')
-            sBuild.push_back(currentChar);
-          if (i == 0) {
-            std::reverse(sBuild.begin(), sBuild.end());
-            outputBrick.vAttributes.push_back(sBuild);
-          }
+          iCurrentSection += 1;
+          continue;
         }
+        switch (iCurrentSection) {
+          case 0: // Name
+            if(currentChar != ' ') {
+              sBuild.push_back(currentChar);
+            } else if(sBuild.length() > 0) {
+              outputBrick.sName = sBuild;
+              sBuild.clear();
+            }
+            break;
+          case 1: // Attributes
+            if(currentChar == ' ' || currentChar == ',') {
+              if(sBuild.length() > 0) {
+                outputBrick.vAttributes.push_back(sBuild);
+                sBuild.clear();
+              }
+            } else {
+              sBuild.push_back(currentChar);
+            }
+            break;
+          case 2: // Value
+            if(bInsideQuotes) {
+              sBuild.push_back(currentChar);
+              if(currentChar == '"' && sBrickRawContents[i-1] != '\\') {
+                bInsideQuotes = false;
+              }
+            } else if(currentChar == ' ' || currentChar == ',') {
+              if(sBuild.length() > 0) {
+                outputBrick.vContents.push_back(sBuild);
+                sBuild.clear();
+              }
+            } else {
+              sBuild.push_back(currentChar);
+              if(currentChar == '"') {
+                bInsideQuotes = true;
+              }
+            }
+            break;
+          default:
+            error("When building brick " + sBrickName + " with content:\n" + sBrickRawContents + "\nOutside max range for parsing. Value should be 0-2 and value was " + std::to_string(iCurrentSection),"Verify correct number of : and = in the right spots.");
+        }
+      }
+      if(sBuild.length() > 0) {
+        if(iCurrentSection == 1) {
+          outputBrick.vAttributes.push_back(sBuild);
+        } else {
+          outputBrick.vContents.push_back(sBuild);
+        }
+        sBuild.clear();
       }
     }
   } else if (sBrickName == "define") {
@@ -451,7 +473,7 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
         if(outputBrick.sName != "UNDEFINED") {
           bInContent = true;
         }
-      } else if (currentChar == ' ' || currentChar == '<') {
+      } else if (currentChar == ' ' || currentChar == ':' || currentChar == '{' || currentChar == ',') {
         if(sBuild.length() > 0) {
           if(outputBrick.sName == "UNDEFINED") {
             outputBrick.sName = sBuild;
@@ -480,14 +502,11 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
         outputBrick.sName = sBuild;
         sBuild.clear();
       } else if (bFirstLine) { // only checks for att if first line
-        if (sBuild.length() > 0 && currentChar == ':') {
+        if (sBuild.length() > 0 && (currentChar == '{' || currentChar == ' ' || currentChar == ',')) {
           outputBrick.vAttributes.push_back(sBuild);
           sBuild.clear();
-        } else if (currentChar == ' ' && sBuild.length() > 0) {
-          outputBrick.vAttributes.push_back(sBuild);
-          sBuild.clear();
-        } else if (currentChar != '<' && currentChar != ':' &&
-                   currentChar != ' ') {
+        } else if (currentChar != '{' && currentChar != ':' &&
+                   currentChar != ' ' && currentChar != ',') {
           sBuild.push_back(currentChar);
         }
       } else if (currentChar == '\n' && sBuild.length() > 0) {
@@ -525,7 +544,7 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
     iBuildLength = sBuild.length();
 
     if (sBrickRawContents[i] == '\n') {
-      if (iBuildLength < 3) {
+      if (iBuildLength < 2 || (sBuild == "}" && i == sBrickRawContents.length() - 1)) {
         sBuild.clear();
         iBuildLength = 0;
         continue;
@@ -537,7 +556,7 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
     }
   }
 
-  if (iBuildLength > 2)
+  if (iBuildLength > 0)
     sOutput.append(sBuild);
 
   if (sOutput[sOutput.length() - 1] == '\n')
