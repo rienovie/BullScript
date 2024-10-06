@@ -1,15 +1,18 @@
 #include "basmCompiler.hpp"
+#include <algorithm>
 #include <sqlite3.h>
+#include <string>
 #include "../logger.hpp"
 
 std::map<std::string,basm::brick> basm::mBricks {};
 std::map<std::string,basm::asmTranslation> basm::mTranslations {};
 std::map<std::string,basm::asmValue> basm::mValues {};
+std::map<std::string,std::vector<std::string>> basm::mTranslatedDefinitions;
+
 std::unordered_set<std::string> basm::verifiedDefined {};
 std::unordered_set<std::string> basm::currentBranches {};
 std::unordered_set<std::string> basm::currentDefines {};
 std::unordered_set<std::string> basm::inlineFuncs {};
-std::stack<std::vector<std::string>> basm::contentDefineStack {};
 
 std::vector<std::string> basm::vSection_data;
 std::vector<std::string> basm::vSection_bss;
@@ -25,24 +28,118 @@ void basm::compileFromFile(std::string sFile) {
 
   Log->n("Starting branch out...");
   branchOutFromBrick(mBricks["entry"]);
-  // Log->n("Branch out completed.");
+  Log->n("Branch out completed.");
 
 }
 
+std::vector<std::string> basm::translateUnit(std::vector<std::string> unitToTranslate) {
+  std::vector<std::string> output;
+
+  return output;
+}
+
+std::vector<std::string> basm::translateCustom(std::vector<std::string> unitToTranslate) {
+  std::vector<std::string> output;
+
+  return output;
+}
+
+std::string basm::getFnName(std::string sBrickName) {
+  std::string sOutput = sBrickName, sBuild = "", sCurBrick = sBrickName;
+  int iDepth = 1;
+  do {
+    for(int i = 0; i < iDepth; i++) {
+      sCurBrick = mBricks.at(sCurBrick).sKeyword;
+    }
+    if(sCurBrick == "define" || sCurBrick == "fn") {
+      sBuild = "fn_";
+    } else {
+      sBuild = sCurBrick + "_";
+    }
+    sOutput = sBuild + sOutput;
+    iDepth++;
+  } while(sBuild != "fn_");
+
+  return sOutput;
+}
+
 void basm::defineFunctionContents(basm::brick& currentBrick) {
+  if(currentBrick.sKeyword == "create") {
+    error("'create' brick '" + currentBrick.sName + "' is attempting to 'define'!", "Error with compiler. Report plz.");
+  }
+
   Log->v(currentBrick.sName," contents being defined...");
 
-  std::vector<std::string> vOutput;
-  std::string sBuild = "";
+  std::vector<std::string> vOutput, vMultiLine;
+  std::string sBuild = "", sFnName = "";
+
+  std::vector<std::string> (*multiLineTranslateFn)(std::vector<std::string>);
+  multiLineTranslateFn = NULL;
 
   // TODO: down the line add an option to compress varNames, funcNames, and lblNames to make them smaller
   // something like fa,fb,fc,faa,fab,fac,etc...
-  vOutput.push_back("fn_" + currentBrick.sName + ":");
+  vOutput.push_back(getFnName(currentBrick.sName) + ":");
 
-  std::vector<std::string> vSplit;
-  for(auto& i : currentBrick.vContents) {
-    vSplit = util::splitStringOnChar(i, ' ');
-    // TODO: working here
+  for(auto& line : currentBrick.vContents) {
+    sBuild.clear();
+
+    if(vMultiLine.size() > 0) {
+      if(line[0] == '}') {
+        std::vector<std::string> temp = multiLineTranslateFn(vMultiLine);
+        vMultiLine.clear(); // I don't think it'll ever be shorter but just in case
+        std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
+        vOutput = vMultiLine;
+        vMultiLine.clear();
+        continue;
+      } else {
+        vMultiLine.push_back(line);
+        continue;
+      }
+    }
+
+    std::vector<std::string> splitLine = util::splitStringOnChar(line, ' ');
+    std::string& curItem = splitLine[0];
+    if(mTranslations.contains(curItem)) {
+      switch (mTranslations.at(curItem).type) {
+        case INSTRUCTION:
+          sBuild.append(mTranslations.at(curItem).x86_64);
+          sBuild.push_back(' ');
+          break;
+        case REGISTER:
+          error("First line item '" + curItem + "' in brick '" + currentBrick.sName + "' is a register.","First item needs to be an instruction or function.");
+          break;
+        case SUBSTITUTION:
+          error("First line item '" + curItem + "' in brick '" + currentBrick.sName + "' is invalid.","First item needs to be an instruction or function.");
+          break;
+        case UNIQUE:
+          if(line.at(line.length() - 1) == '{') {
+            vMultiLine.push_back(line.substr(0,line.length()-2)); // -2 should remove the {
+            multiLineTranslateFn = translateCustom;
+          } else {
+            std::vector<std::string> temp;
+            temp.push_back(line);
+            vMultiLine = translateCustom(temp);
+            std::merge(vOutput.begin(),vOutput.end(),vMultiLine.begin(),vMultiLine.end(),temp.begin());
+            vOutput = temp;
+            vMultiLine.clear();
+          }
+          continue;
+        default:
+          error("DB translation type is not handled when defining function contents. Type enum value is " + std::to_string(mTranslations.at(curItem).type), "In compiler handle type.");
+          break;
+      }
+      for(int i = 1; i < splitLine.size(); i++) {
+        // TODO: working here
+      }
+    } else if(verifiedDefined.contains(curItem)) {
+
+    } else if(inlineFuncs.contains(curItem)) {
+
+    } else if(mBricks.contains(curItem)) {
+      branchOutFromBrick(mBricks.at(curItem));
+    } else {
+      error("Unable to find first line item \"" + splitLine[0] + "\" inside brick \"" + currentBrick.sName + "\".", "Define item or verify spelling.");
+    }
   }
 
   Log->v(currentBrick.sName," contents defined.");
@@ -85,9 +182,11 @@ void basm::defineBrick(basm::brick& currentBrick) {
       vSection_bss.push_back(sFinalLine);
       Log->v("Added: ",sFinalLine," to bss section.");
     } else {
-      for(auto& i : currentBrick.vContents) {
-        // TODO: account for "\n" and others here
-        sFinalLine.append(i + " ");
+      for(int i = 0; i < currentBrick.vContents.size(); i++) {
+        if(i > 0) {
+          sFinalLine.append(", ");
+        }
+        sFinalLine.append(currentBrick.vContents[i]);
       }
       if(bConst) {
         vSection_rodata.push_back(sFinalLine);
@@ -229,17 +328,17 @@ void basm::loadTranslations() {
 
 void basm::printTranslations() {
   Log->v("Printing translation tables...");
-  Log->v("\n");
+  // Log->v("\n");
   Log->v("Main table:");
   for(auto& i : mTranslations) {
     Log->v(i.second.type,i.first,i.second.x86_64);
   }
-  Log->v("\n");
+  // Log->v("\n");
   Log->v("Value table:");
   for(auto& i : mValues) {
     Log->v(i.first,i.second.x86_64);
   }
-  Log->v("\n");
+  // Log->v("\n");
   Log->v("Finished printing translation tables.");
 }
 
@@ -578,5 +677,5 @@ void basm::printBrick(basm::brick& toPrint) {
   for (auto &i : toPrint.vContents) {
     Log->v("CON",i);
   }
-  Log->v("\n");
+  // Log->v("\n");
 }

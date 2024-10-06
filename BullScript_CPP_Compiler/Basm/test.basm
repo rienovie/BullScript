@@ -34,7 +34,7 @@ create {
 	anotherMessage : 8b = "Hello again!\n"
 	aValue : 8b = 8
 	unintializedVariable : 16b, 16
-	immutableMessage : 8b, const = "Immute Hello!\n"
+	immutableMessage : 8b, const = "Immute Hello!", 10, 0
 }
 
 ; when using "{}" in basm you must have the open on the first line
@@ -123,6 +123,8 @@ aCoolThing wordLength {
 	return
 }
 
+; when translated to nasm name should be:
+; fn_aCoolThing_print
 aCoolThing print {
 	; three ways to call a syscall / each of these are equivallent
 	; as this function is typed, this'll be printed three times

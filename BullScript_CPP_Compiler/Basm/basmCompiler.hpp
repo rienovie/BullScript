@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stack>
 #include <string>
 #include <vector>
 #include <map>
@@ -36,11 +35,11 @@ public:
 	static std::map<std::string,brick> mBricks;
 	static std::map<std::string,asmTranslation> mTranslations;
 	static std::map<std::string,asmValue> mValues;
+	static std::map<std::string,std::vector<std::string>> mTranslatedDefinitions;
 	static std::unordered_set<std::string> verifiedDefined;
 	static std::unordered_set<std::string> currentBranches;
 	static std::unordered_set<std::string> currentDefines;
 	static std::unordered_set<std::string> inlineFuncs;
-	static std::stack<std::vector<std::string>> contentDefineStack;
 	static std::vector<std::string> vSection_data;
 	static std::vector<std::string> vSection_bss;
 	static std::vector<std::string> vSection_rodata;
@@ -63,4 +62,8 @@ private:
 		printTranslations(),
 		printAllBricks(),
 		branchOutFromBrick(brick& branchBrick);
+	static std::vector<std::string>
+		translateCustom(std::vector<std::string> unitToTranslate),
+		translateUnit(std::vector<std::string> unitToTranslate);
+	static std::string getFnName(std::string sBrickName);
 };
