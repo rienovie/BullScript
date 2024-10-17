@@ -56,7 +56,7 @@ _func:
 
     ret
 
-func_length:
+fn_func_length:
     mov r11, r14
 
     l_length_nextChar:
@@ -70,12 +70,12 @@ func_length:
 
     ret
 
-func_print:
+fn_func_print:
     mov rax, 1
     mov rdi, 1
     mov rsi, r14
 
-    mov r13, func_length
+    mov r13, fn_func_length
     call _func
     mov rdx, r11
 
@@ -90,11 +90,11 @@ _exit:
 
 _start:
     mov r14, message
-    mov r13, func_print
+    mov r13, fn_func_print
     call _func
 
     mov r14, anotherMessage
-    mov r13, func_print
+    mov r13, fn_func_print
     call _func
 
     call _exit

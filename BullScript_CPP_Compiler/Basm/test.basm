@@ -24,6 +24,10 @@
 ; create VarName : readOnly, db = VALUE
 create message : const, 8b = "Hello World!\n"
 
+; the line above has a space after message and before const
+; the compiler spilts lines by spaces so there must be space between items
+; the only exception is the comma which can be handled as part of another item
+
 ; Instead of using db, dw, etc uses:
 ; 8b (db) / 16b (dw) / 32b (dd) / 64b (dq)
 ; variables require this in the attributes
@@ -62,14 +66,23 @@ define aCoolThing {
 fn stackPush {
 	pop reg1
 
-	; Starting the line with "multi" means it'll apply the first item to each subsequent items
-	; on multilines use () to pass multiple values to each line
+	; "multi" is a unique built-in container
+	; Starting the line with "multi" means it'll apply the instruction to each line of the container's contents
 	; Below this is equivallent to:
 	; push regA
 	; push regB
 	; push regC
 	; ...
-	multi push regA, regB, regC, regD, arg1, arg2, input, output
+	multi push {
+		regA
+		regB
+		regC
+		regD
+		arg1
+		arg2
+		input
+		output
+	}
 
 	push reg1
 
@@ -80,7 +93,16 @@ fn stackPop {
 	pop reg1
 
 	; Called in reverse order to maintain correct values from stack
-	multi pop output, input, arg2, arg1, regD, regC, regB, regA
+	multi pop {
+		output
+		input
+		arg2
+		arg1
+		regD
+		regC
+		regB
+		regA
+	}
 
 	push reg1
 
@@ -148,7 +170,12 @@ aCoolThing print {
 	syscall $write, #stdout, "\n", 1
 
 	; call style three:
-	multi move (sys, $write), (arg1, #stdout), (arg2, input), (arg3, wordLength input)
+	multi move {
+		sys, $write
+		arg1, #stdout
+		arg2, input
+		arg3, wordLength input
+	}
 	call
 
 
@@ -163,6 +190,12 @@ fn exit {
 
 ; the same as the _start function
 fn entry {
-	multi print message, anotherMessage, aValue, "A string literal\n"
+	multi print {
+		message
+		anotherMessage
+		aValue
+		"A string literal"
+		"A complex string literal\n"
+	}
 	exit; exit will be called even if excluded at the end of the entry function
 }

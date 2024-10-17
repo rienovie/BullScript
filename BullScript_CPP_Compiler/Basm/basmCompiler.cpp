@@ -32,14 +32,26 @@ void basm::compileFromFile(std::string sFile) {
 
 }
 
-std::vector<std::string> basm::translateUnit(std::vector<std::string> unitToTranslate) {
+std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::vector<basm::itemInfo> unitToTranslate) {
   std::vector<std::string> output;
+
+  // TODO: define
 
   return output;
 }
 
-std::vector<std::string> basm::translateCustom(std::vector<std::string> unitToTranslate) {
+std::vector<std::string> basm::translateMultiUnit(basm::unitInstructions uIns, std::vector<std::string> vLines) {
   std::vector<std::string> output;
+
+  // TODO: define
+
+  return output;
+}
+
+basm::itemInfo getItemInfo(std::string sItem) {
+  basm::itemInfo output;
+
+  // TODO: define
 
   return output;
 }
@@ -70,23 +82,22 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
 
   Log->v(currentBrick.sName," contents being defined...");
 
-  std::vector<std::string> vOutput, vMultiLine;
-  std::string sBuild = "", sFnName = "";
-
-  std::vector<std::string> (*multiLineTranslateFn)(std::vector<std::string>);
-  multiLineTranslateFn = NULL;
+  std::vector<std::string>
+    vOutput,
+    vSplitLine,
+    vMultiLine;
+  std::vector<itemInfo> vBuildUnit;
 
   // TODO: down the line add an option to compress varNames, funcNames, and lblNames to make them smaller
   // something like fa,fb,fc,faa,fab,fac,etc...
   vOutput.push_back(getFnName(currentBrick.sName) + ":");
 
   for(auto& line : currentBrick.vContents) {
-    sBuild.clear();
-
     if(vMultiLine.size() > 0) {
       if(line[0] == '}') {
-        std::vector<std::string> temp = multiLineTranslateFn(vMultiLine);
-        vMultiLine.clear(); // I don't think it'll ever be shorter but just in case
+        auto uI = unitInstructions(vBuildUnit, true);
+        std::vector<std::string> temp = translateMultiUnit(uI, vMultiLine);
+        vMultiLine.clear();
         std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
         vOutput = vMultiLine;
         vMultiLine.clear();
@@ -97,49 +108,24 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
       }
     }
 
-    std::vector<std::string> splitLine = util::splitStringOnChar(line, ' ');
-    std::string& curItem = splitLine[0];
-    if(mTranslations.contains(curItem)) {
-      switch (mTranslations.at(curItem).type) {
-        case INSTRUCTION:
-          sBuild.append(mTranslations.at(curItem).x86_64);
-          sBuild.push_back(' ');
-          break;
-        case REGISTER:
-          error("First line item '" + curItem + "' in brick '" + currentBrick.sName + "' is a register.","First item needs to be an instruction or function.");
-          break;
-        case SUBSTITUTION:
-          error("First line item '" + curItem + "' in brick '" + currentBrick.sName + "' is invalid.","First item needs to be an instruction or function.");
-          break;
-        case UNIQUE:
-          if(line.at(line.length() - 1) == '{') {
-            vMultiLine.push_back(line.substr(0,line.length()-2)); // -2 should remove the {
-            multiLineTranslateFn = translateCustom;
-          } else {
-            std::vector<std::string> temp;
-            temp.push_back(line);
-            vMultiLine = translateCustom(temp);
-            std::merge(vOutput.begin(),vOutput.end(),vMultiLine.begin(),vMultiLine.end(),temp.begin());
-            vOutput = temp;
-            vMultiLine.clear();
-          }
-          continue;
-        default:
-          error("DB translation type is not handled when defining function contents. Type enum value is " + std::to_string(mTranslations.at(curItem).type), "In compiler handle type.");
-          break;
-      }
-      for(int i = 1; i < splitLine.size(); i++) {
-        // TODO: working here
-      }
-    } else if(verifiedDefined.contains(curItem)) {
+    vBuildUnit.clear();
 
-    } else if(inlineFuncs.contains(curItem)) {
-
-    } else if(mBricks.contains(curItem)) {
-      branchOutFromBrick(mBricks.at(curItem));
-    } else {
-      error("Unable to find first line item \"" + splitLine[0] + "\" inside brick \"" + currentBrick.sName + "\".", "Define item or verify spelling.");
+    vSplitLine = util::splitStringOnChar(line, ' ');
+    if(vSplitLine.at(vSplitLine.size() - 1) == "{") {
+      vMultiLine.push_back(line);
+      continue;
     }
+
+    for(auto& i : vSplitLine) {
+      vBuildUnit.push_back(getItemInfo(i));
+    }
+
+    auto uI = unitInstructions(vBuildUnit);
+    std::vector<std::string> temp = translateUnit(uI, vBuildUnit);
+    vMultiLine.clear();
+    std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
+    vOutput = vMultiLine;
+
   }
 
   Log->v(currentBrick.sName," contents defined.");
