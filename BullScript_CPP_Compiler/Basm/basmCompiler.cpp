@@ -53,6 +53,8 @@ basm::itemInfo getItemInfo(std::string sItem) {
 
   // TODO: define
 
+  
+
   return output;
 }
 
@@ -110,7 +112,47 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
 
     vBuildUnit.clear();
 
-    vSplitLine = util::splitStringOnChar(line, ' ');
+    std::string sBuild = "";
+    bool
+      bInsideParen = false,
+      bInsideQuote = false,
+      bEscape = false;
+    char curChar;
+    for(int i = 0; i < line.length(); i++) {
+      curChar = line[i];
+      if(bEscape) {
+        bEscape = false;
+      } else if(curChar == '\\') {
+        bEscape = true;
+      } else if(bInsideParen) {
+        if(curChar == ')') {
+          bInsideParen = false;
+        }
+      } else if(bInsideQuote) {
+        if(curChar == '"') {
+          bInsideQuote = false;
+        }
+      } else if(curChar == '"') {
+        bInsideQuote = true;
+      } else if(curChar == '(') {
+        bInsideQuote = true;
+      } else if(curChar == ' ') {
+        if(sBuild.length() < 1) {
+          continue;
+        }
+        vSplitLine.push_back(sBuild);
+        sBuild.clear();
+        continue;
+      }
+
+      sBuild.push_back(curChar);
+
+    }
+
+    if(sBuild.length() > 0) {
+      vSplitLine.push_back(sBuild);
+    }
+
     if(vSplitLine.at(vSplitLine.size() - 1) == "{") {
       vMultiLine.push_back(line);
       continue;
