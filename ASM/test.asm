@@ -2,14 +2,18 @@
 global _start
 
     section .bss
-unintializedVariable: resd 16
+unintializedVariable: resd 64
 
     section .rodata
 immutableMessage: db "Immute Hello!", 10, 0
+aMessage: db "aValue is greater than anotherValue", 10, 0
+%define bShouldPrint 1
 
     section .data
 message: db "Hello world!", 10, 0
-anotherMessage: dw "Hi", 0
+anotherMessage: dw "Hi", 10, 0
+aValue: db 15
+anotherValue: db 2
 
     section .text
 
@@ -93,8 +97,17 @@ _start:
     mov r13, fn_func_print
     call _func
 
+    %if bShouldPrint
     mov r14, anotherMessage
     mov r13, fn_func_print
     call _func
+    %endif
+
+    ; TODO: this doesn't work right figure out why
+    %if aValue < anotherValue
+    mov r14, aMessage
+    mov r13, fn_func_print
+    call _func
+    %endif
 
     call _exit

@@ -125,7 +125,7 @@ define if : inline {
 ; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
 ; TODO: look into if multiconditions would work in basm
 ; comparsions are:
-;   = , != , < , > , <= , >=
+;   == , != , < , > , <= , >=
 
 define while : inline {
 	label whileJump
