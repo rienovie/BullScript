@@ -48,12 +48,86 @@ std::vector<std::string> basm::translateMultiUnit(basm::unitInstructions uIns, s
   return output;
 }
 
-basm::itemInfo getItemInfo(std::string sItem) {
+basm::itemInfo basm::getItemInfo(std::string sItem) {
   basm::itemInfo output;
 
-  // TODO: define
+  // NOTE: defaults to unique type and requires specific accounting for in translation step
+  output.type = itemType::UNI;
 
-  
+  Log->v("getItemInfo called for item '" + sItem + "'");
+
+  if(sItem.length() < 2) {
+    error("Attempted to get info from an item '" + sItem + "' but this is invalid.", "Item length is less than two, report compiler error.");
+  }
+
+  // TODO: need to account for prepend and append
+
+  char curChar = sItem[0];
+  std::string sBuild = "";
+  // slit || xlit
+  if(curChar == '"') {
+    if(util::contains(sItem,'\\')) {
+      output.type = itemType::XLIT;
+
+      // TODO: have a unique naming map for rodata lits
+      output.name = sItem;
+
+      std::string sToValue = "";
+      bool bInQuotes = true;
+      for(int i = 0; i < sItem.length(); i++) {
+        curChar = sItem[i];
+        sToValue.clear();
+        if(curChar == '\\') {
+          if(bInQuotes) {
+            sBuild.push_back('"');
+          }
+          sBuild.append(", ");
+          i++;
+          sToValue = curChar + sItem[i];
+          if(!mValues.contains(sToValue)) {
+            error("Complex string literal item '" + sToValue + "' is not found.", "Verify spelling and if correct plz report to compiler.");
+          }
+          sBuild.append(std::to_string(mValues.at(sToValue).x86_64));
+          if(i < sItem.length() - 2) {
+            sBuild.append(", ");
+            bInQuotes = false;
+            if(sItem[i+1] != '\\') {
+              sBuild.push_back('"');
+              bInQuotes = true;
+            }
+          }
+        } else {
+          sBuild.push_back(curChar);
+          bInQuotes = true;
+        }
+      }
+      sBuild.append(", 0");
+      output.translatedValue = sBuild;
+    } else {
+      output.type = itemType::SLIT;
+
+      // TODO: have unique naming for lits
+      output.name = sItem;
+
+      output.translatedValue = sItem + ", 0";
+    }
+
+  // val
+  } else if (curChar == '$' || curChar == '#') {
+    if(!mValues.contains(sItem)) {
+      error("Item '" + sItem + "' is not found.", "Verify spelling and if correct plz report to compiler.");
+    }
+    output.type = itemType::VAL;
+    output.name = sItem.substr(1);
+    output.translatedValue = std::to_string(mValues.at(sItem).x86_64);
+
+  // grp
+  } else if (curChar == '(') {
+    output.type = itemType::GRP;
+    output.name = sItem;
+  } else {
+
+  }
 
   return output;
 }

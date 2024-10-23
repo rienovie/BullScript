@@ -6,6 +6,8 @@
 
 #include "../Util/util.hpp"
 
+
+// TODO: need to reorder which functions/vars are public/private
 class basm {
 public:
 	struct brick {
@@ -30,8 +32,10 @@ public:
 		FN = 5,		// function
 		IFN = 6,	// inline function
 		VAR = 7,	// variable
-		LIT = 8,	// literal
-		XLIT = 9	// complex literal (must be translated to rodata)
+		SLIT = 8,	// string literal
+		XLIT = 9,	// complex string literal (must be translated to rodata)
+		VLIT = 10,	// value literal
+		GRP = 11	// group (inside parentheses)
 	};
 
 	struct asmTranslation {
@@ -82,7 +86,6 @@ public:
 	
 
 	static void compileFromFile(std::string sFile);
-	static itemInfo getItemInfo(std::string sItem);
 
 private:
 
@@ -103,4 +106,5 @@ private:
 		translateMultiUnit(unitInstructions uIns,std::vector<std::string> vLines),
 		translateUnit(unitInstructions uIns,std::vector<itemInfo> unitToTranslate);
 	static std::string getFnName(std::string sBrickName);
+	static itemInfo getItemInfo(std::string sItem);
 };
