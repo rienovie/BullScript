@@ -8,6 +8,8 @@ std::map<std::string,basm::brick> basm::mBricks {};
 std::map<std::string,basm::asmTranslation> basm::mTranslations {};
 std::map<std::string,basm::asmValue> basm::mValues {};
 std::map<std::string,std::vector<std::string>> basm::mTranslatedDefinitions;
+std::map<std::string,std::string> basm::mSLITs {};
+std::map<std::string,std::string> basm::mXLITs {};
 
 std::unordered_set<std::string> basm::verifiedDefined {};
 std::unordered_set<std::string> basm::currentBranches {};
@@ -36,6 +38,7 @@ std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::v
   std::vector<std::string> output;
 
   // TODO: define
+  // check if bricks are defined, if not define them
 
   return output;
 }
@@ -44,6 +47,7 @@ std::vector<std::string> basm::translateMultiUnit(basm::unitInstructions uIns, s
   std::vector<std::string> output;
 
   // TODO: define
+  // check if bricks are defined, if not define them
 
   return output;
 }
@@ -60,7 +64,19 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
     error("Attempted to get info from an item '" + sItem + "' but this is invalid.", "Item length is less than two, report compiler error.");
   }
 
-  // TODO: need to account for prepend and append
+  // maybe can merge this into a single for loop but meh for now
+  int iCounter = 0;
+  for(; !(util::charFilter(sItem[iCounter],"\"$#()",true,true)); iCounter++) {
+    output.prepend.push_back(sItem[iCounter]);
+  }
+  sItem = sItem.substr(iCounter);
+
+  iCounter = sItem.length() - 1;
+  for(; !(util::charFilter(sItem[iCounter],"\"$#()",true,true)); iCounter--) {
+    output.append.push_back(sItem[iCounter]);
+    sItem.pop_back();
+  }
+  util::reverseString(output.append);
 
   char curChar = sItem[0];
   std::string sBuild = "";
@@ -68,9 +84,6 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
   if(curChar == '"') {
     if(util::contains(sItem,'\\')) {
       output.type = itemType::XLIT;
-
-      // TODO: have a unique naming map for rodata lits
-      output.name = sItem;
 
       std::string sToValue = "";
       bool bInQuotes = true;
@@ -103,13 +116,34 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
       }
       sBuild.append(", 0");
       output.translatedValue = sBuild;
+
+      if(util::containsValue(mXLITs, output.translatedValue)) {
+        output.name = util::findKey(mXLITs, output.translatedValue);
+      } else {
+        int it = 0;
+        do {
+          it++;
+          sBuild = "XL_" + std::to_string(it);
+        } while (mXLITs.contains(sBuild));
+        mXLITs[sBuild] = output.translatedValue;
+        output.name = sBuild;
+      }
     } else {
       output.type = itemType::SLIT;
 
-      // TODO: have unique naming for lits
-      output.name = sItem;
-
       output.translatedValue = sItem + ", 0";
+
+      if(util::containsValue(mSLITs, output.translatedValue)) {
+        output.name = util::findKey(mSLITs, output.translatedValue);
+      } else {
+        int it = 0;
+        do {
+          it++;
+          sBuild = "SL_" + std::to_string(it);
+        } while (mSLITs.contains(sBuild));
+        mSLITs[sBuild] = output.translatedValue;
+        output.name = sBuild;
+      }
     }
 
   // val
@@ -125,8 +159,58 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
   } else if (curChar == '(') {
     output.type = itemType::GRP;
     output.name = sItem;
-  } else {
 
+  // vlit
+  } else if(sItem.substr(0,2) == "0x" || sItem.substr(0,2) == "0b" || util::onlyContains(sItem,"0987654321.")) {
+    output.type = itemType::VLIT;
+    output.name = sItem;
+    output.translatedValue = sItem;
+
+  // ifn
+  } else if(inlineFuncs.contains(sItem)) {
+    output.type = itemType::IFN;
+    output.name = sItem;
+
+  // var || fn
+  } else if(mBricks.contains(sItem)) {
+    auto& item = mBricks.at(sItem);
+    // var
+    if(item.sKeyword == "create") {
+      output.type = itemType::VAR;
+      output.name = item.sName;
+
+    // fn
+    } else {
+      output.type = itemType::FN;
+      output.name = item.sName;
+      output.translatedValue = getFnName(item.sName);
+    }
+
+  // ins || reg || sub || uni
+  } else if(mTranslations.contains(sItem)) {
+    auto& item = mTranslations.at(sItem);
+    output.name = sItem;
+    output.translatedValue = item.x86_64;
+    switch (item.type) {
+      case INSTRUCTION:
+        output.type = itemType::INS;
+        break;
+      case REGISTER:
+        output.type = itemType::REG;
+        break;
+      case SUBSTITUTION:
+        output.type = itemType::SUB;
+        break;
+      case UNIQUE:
+        output.type = itemType::UNI;
+        break;
+      default:
+        error("Item type value of '" + std::to_string(item.type) + "' is out of bounds.", "DB error, verify DB file or report.");
+    }
+
+  // could not find
+  } else {
+    error("Unable to find item '" + sItem + "' when attempting to getItemInfo.","Verify spelling or define item.");
   }
 
   return output;

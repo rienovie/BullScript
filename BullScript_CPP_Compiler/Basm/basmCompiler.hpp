@@ -1,10 +1,9 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include <map>
-
-#include "../Util/util.hpp"
 
 
 // TODO: need to reorder which functions/vars are public/private
@@ -75,6 +74,10 @@ public:
 	static std::map<std::string,asmTranslation> mTranslations;
 	static std::map<std::string,asmValue> mValues;
 	static std::map<std::string,std::vector<std::string>> mTranslatedDefinitions;
+	static std::map<std::string,std::string>
+		mSLITs,
+		mXLITs;
+
 	static std::unordered_set<std::string> verifiedDefined;
 	static std::unordered_set<std::string> currentBranches;
 	static std::unordered_set<std::string> currentDefines;
