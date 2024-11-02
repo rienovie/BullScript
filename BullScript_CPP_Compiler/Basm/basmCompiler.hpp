@@ -59,14 +59,10 @@ public:
 
 	struct unitInstructions {
 		itemInfo firstItem;
-		bool
-			bFunction,
-			bMulti; // multi keyword not multilined
-		unitInstructions(std::vector<itemInfo>& unit, bool multiLine = false)
-		:
+		bool bFunction;
+		unitInstructions(std::vector<itemInfo>& unit) :
 			firstItem(unit.at(0)),
-			bFunction(unit.at(0).type == FN),
-			bMulti(multiLine)
+			bFunction(unit.at(0).type == FN)
 		{};
 	};
 

@@ -152,7 +152,7 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
       error("Item '" + sItem + "' is not found.", "Verify spelling and if correct plz report to compiler.");
     }
     output.type = itemType::VAL;
-    output.name = sItem.substr(1);
+    output.name = sItem;
     output.translatedValue = std::to_string(mValues.at(sItem).x86_64);
 
   // grp
@@ -255,7 +255,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
   for(auto& line : currentBrick.vContents) {
     if(vMultiLine.size() > 0) {
       if(line[0] == '}') {
-        auto uI = unitInstructions(vBuildUnit, true);
+        auto uI = unitInstructions(vBuildUnit);
         std::vector<std::string> temp = translateMultiUnit(uI, vMultiLine);
         vMultiLine.clear();
         std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
