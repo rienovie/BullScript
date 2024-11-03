@@ -34,8 +34,9 @@ echo $'Bull CPP Compile success!\n'
 
 if [ $# -gt 0 ] && [ $1 = "run" ]; then
 	cd ..
-	testFile=$(pwd)/Basm/test.basm
-	./build/bull_cpp $testFile
+	# testFile=$(pwd)/Basm/test.basm
+	# ./build/bull_cpp $testFile
+	./build/bull_cpp
 fi
 
 if [ $? -ne 0 ]; then

@@ -38,10 +38,10 @@ public:
 	template <typename... Args>
 	static void n(Args... inputArgs) {
 		if(!bInitialized) {
-			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::qPrint("N:",inputArgs...); }
+		if(Options.bPrint) { util::cPrint("cyan",inputArgs...); }
 		writeToFile("N:",inputArgs...);
 	}
 
@@ -50,11 +50,11 @@ public:
 	template <typename... Args>
 	static void v(Args... inputArgs) {
 		if(!bInitialized) {
-			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
 		if(!Options.bVerbose) { return; }
-		if(Options.bPrint) { util::qPrint("V:",inputArgs...); }
+		if(Options.bPrint) { util::qPrint(inputArgs...); }
 		writeToFile("V:",inputArgs...);
 	}
 
@@ -63,10 +63,10 @@ public:
 	template <typename... Args>
 	static void w(Args... inputArgs) {
 		if(!bInitialized) {
-			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::qPrint("W:",inputArgs...); }
+		if(Options.bPrint) { util::cPrint("yellow",inputArgs...); }
 		writeToFile("W:",inputArgs...);
 	}
 
@@ -76,10 +76,10 @@ public:
 	template <typename... Args>
 	static void e(Args... inputArgs) {
 		if(!bInitialized) {
-			util::qPrint("Log not initialized! Please run 'initialize' function before attempting to log.");;
+			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::qPrint("E:",inputArgs...); }
+		if(Options.bPrint) { util::cPrint("red",inputArgs...); }
 		writeToFile("E:",inputArgs...);
 		if(Options.bThrowOnError) {
 			throw;
