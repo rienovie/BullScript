@@ -197,5 +197,6 @@ fn entry {
 		"A string literal"
 		"A complex string literal\n"
 	}
+	print "Single line print\n"
 	exit; exit will be called even if excluded at the end of the entry function
 }

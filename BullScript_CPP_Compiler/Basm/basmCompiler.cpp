@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <sqlite3.h>
 #include <string>
+#include <utility>
 #include "../logger.hpp"
 
 std::map<std::string,basm::brick> basm::mBricks {};
@@ -36,9 +37,54 @@ void basm::compileFromFile(std::string sFile) {
 
 std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::vector<basm::itemInfo> unitToTranslate) {
   std::vector<std::string> output;
+  std::string sBuild = "";
 
   // TODO: define
   // check if bricks are defined, if not define them
+
+  if(uIns.firstItem.type == itemType::UNI) {
+    std::string sName = uIns.firstItem.name;
+
+    if(sName == "syscall") {
+      if(unitToTranslate.size() < 2) {
+        error("Not enough args given to a syscall.", "syscall requires at least one argument. If you just want to initiate a syscall use 'call' instead");
+      }
+      // x = start , y = end
+      std::vector<util::int2d> itemGroups;
+      itemGroups.push_back(util::int2d(1,1));
+
+      int iCurItem = 1;
+      do {
+        itemGroups.back().y = iCurItem;
+        sBuild = unitToTranslate.at(iCurItem).append;
+        if(util::contains(sBuild,',')) {
+          if(util::contains(sBuild,'"')) {
+            // TODO: handle
+            error("Compiler unhandled in current version.","Comma inside quotation mark.");
+          } else {
+            iCurItem++;
+            if(iCurItem < unitToTranslate.size()) {
+              itemGroups.push_back(util::int2d(iCurItem,iCurItem));
+            }
+            continue;
+          }
+        }
+
+        iCurItem++;
+      } while (iCurItem < unitToTranslate.size());
+
+      for(auto& group : itemGroups) {
+        if(group.x != group.y) {
+
+        } else {
+          //TODO: working here
+        }
+      }
+
+    } else {
+      error("Attempted to translate undefined unique '" + sName + "'", "Verify spelling or define new.");
+    }
+  }
 
   return output;
 }
