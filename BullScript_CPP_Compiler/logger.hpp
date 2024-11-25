@@ -41,7 +41,7 @@ public:
 			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::cPrint("cyan",inputArgs...); }
+		if(Options.bPrint) { util::cPrint("cyan","-",inputArgs...); }
 		writeToFile("N:",inputArgs...);
 	}
 
@@ -54,7 +54,7 @@ public:
 			return;
 		}
 		if(!Options.bVerbose) { return; }
-		if(Options.bPrint) { util::qPrint(inputArgs...); }
+		if(Options.bPrint) { util::qPrint("-",inputArgs...); }
 		writeToFile("V:",inputArgs...);
 	}
 
@@ -66,7 +66,7 @@ public:
 			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::cPrint("yellow",inputArgs...); }
+		if(Options.bPrint) { util::cPrint("yellow","-",inputArgs...); }
 		writeToFile("W:",inputArgs...);
 	}
 
@@ -79,7 +79,7 @@ public:
 			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::cPrint("red",inputArgs...); }
+		if(Options.bPrint) { util::cPrint("red","-",inputArgs...); }
 		writeToFile("E:",inputArgs...);
 		if(Options.bThrowOnError) {
 			throw;

@@ -18,3 +18,5 @@ include_directories(${SQLite3_INCLUDE_DIRS})
 target_link_libraries(bull_cpp ${SQLite3_LIBRARIES})
 
 install(TARGETS bull_cpp RUNTIME DESTINATION bin)
+install(FILES Basm/basmTranslations.db
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/Basm/)

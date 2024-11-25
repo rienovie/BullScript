@@ -7,6 +7,8 @@
 #include "logger.hpp"
 
 int main(int argc, char *argv[]) {
+    util::alt.setAlt(false);
+
     Log = std::make_unique<logClass>();
     Log->Options.sOutputLocation = "logs/";
     Log->Options.bVerbose = true;
@@ -28,7 +30,9 @@ int main(int argc, char *argv[]) {
         if(bTesting) {
             vArgs.clear();
             vArgs.push_back(util::argvToString(argv[0]));
-            vArgs.push_back("Basm/test.basm");
+
+            vArgs.push_back(util::switchOnAlt("BullScript_CPP_Compiler/Basm/test.basm", "Basm/test.basm"));
+            // vArgs.push_back("BullScript_CPP_Compiler/Basm/test.basm");
             // TODO: handle third arg
         } else {
 	        std::string sFullCommand = "";

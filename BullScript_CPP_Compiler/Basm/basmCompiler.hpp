@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <vector>
 #include <map>
+#include "../Util/util.hpp"
 
 
 // TODO: need to reorder which functions/vars are public/private
@@ -104,6 +105,15 @@ private:
 	static std::vector<std::string>
 		translateMultiUnit(unitInstructions uIns,std::vector<std::string> vLines),
 		translateUnit(unitInstructions uIns,std::vector<itemInfo> unitToTranslate);
-	static std::string getFnName(std::string sBrickName);
-	static itemInfo getItemInfo(std::string sItem);
+	static std::string
+		getFnName(std::string sBrickName),
+		resolveItem(std::vector<std::string>& outputRef,itemInfo itemToResolve);
+	static itemInfo
+		getItemInfo(std::string sItem),
+		resolveSubUnits(std::vector<std::string>& outputRef,std::vector<itemInfo>& subUnits);
+	static std::vector<util::int2d> getItemGroups(std::vector<itemInfo>& translationUnit);
+
+	// Specific Resolutions
+	static void
+		resolve_syscall(std::vector<std::string>& outputRef, std::vector<itemInfo>& translationUnit);
 };

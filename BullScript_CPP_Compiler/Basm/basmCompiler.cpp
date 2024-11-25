@@ -1,5 +1,6 @@
 #include "basmCompiler.hpp"
 #include <algorithm>
+#include <filesystem>
 #include <sqlite3.h>
 #include <string>
 #include <utility>
@@ -35,9 +36,110 @@ void basm::compileFromFile(std::string sFile) {
 
 }
 
+// Will return translated value
+std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInfo itemToResolve) {
+  std::string sOutput;
+
+  return sOutput;
+}
+
+// NOTE: only send end unit not entire full unit
+// i.e. send only items within a single ","
+basm::itemInfo basm::resolveSubUnits(std::vector<std::string>& outputRef,std::vector<basm::itemInfo>& subUnits) {
+  itemInfo resolution;
+
+  return resolution;
+}
+
+void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm::itemInfo>& translationUnit) {
+  if(translationUnit.size() < 2) {
+    error("Not enough args given to a syscall.", "syscall requires at least one argument. If you just want to initiate a syscall use 'call' instead");
+  }
+
+  std::vector<util::int2d> itemGroups = getItemGroups(translationUnit);
+  std::vector<itemInfo> subUnits;
+  std::string sBuild = "";
+
+  // only translate after the first group
+  while (itemGroups.size() > 1) {
+    util::int2d& curGroup = itemGroups.back();
+    sBuild.clear();
+    subUnits.clear();
+    if(curGroup.x != curGroup.y) {
+      for(int i = curGroup.x; i < curGroup.y + 1; i++) {
+        subUnits.push_back(translationUnit.at(i));
+      }
+      sBuild = resolveItem(outputRef,resolveSubUnits(outputRef, subUnits));
+    } else {
+      sBuild = resolveItem(outputRef, translationUnit.at(curGroup.x));
+    }
+
+    switch (itemGroups.size()) {
+      case 2:
+        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg1").x86_64 + ", " + sBuild);
+        break;
+      case 3:
+        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg2").x86_64 + ", " + sBuild);
+        break;
+      case 4:
+        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg3").x86_64 + ", " + sBuild);
+        break;
+      case 5:
+        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg4").x86_64 + ", " + sBuild);
+        break;
+      case 6:
+        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg5").x86_64 + ", " + sBuild);
+        break;
+      case 7:
+        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg6").x86_64 + ", " + sBuild);
+        break;
+      default:
+        error("Too many args given to syscall.", "Max of 7 args for a syscall and you gave " + std::to_string(itemGroups.size()) + ".");
+    }
+
+    itemGroups.pop_back();
+
+  }
+
+  // if more than a single item for first arg
+  if(itemGroups.at(0).y > 1) {
+    
+  } else {
+    outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("sys").x86_64 + ", " + resolveItem(outputRef, translationUnit.at(1)));
+  }
+}
+
+std::vector<util::int2d> basm::getItemGroups(std::vector<basm::itemInfo>& translationUnit) {
+  std::vector<util::int2d> output;
+  int iCurItem = 1;
+
+  do {
+        output.back().y = iCurItem;
+        if(util::contains(translationUnit.at(iCurItem).append,',')) {
+          if(util::contains(translationUnit.at(iCurItem).append,'"')) {
+            // TODO: handle
+            error("Compiler unhandled in current version.","Comma inside quotation mark.");
+          } else {
+            iCurItem++;
+            if(iCurItem < translationUnit.size()) {
+              output.push_back(util::int2d(iCurItem,iCurItem));
+            }
+            continue;
+          }
+        }
+
+        iCurItem++;
+      } while (iCurItem < translationUnit.size());
+
+
+  return output;
+}
+
 std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::vector<basm::itemInfo> unitToTranslate) {
   std::vector<std::string> output;
   std::string sBuild = "";
+
+  Log->v("Translating unit '" + uIns.firstItem.name + "'");
 
   // TODO: define
   // check if bricks are defined, if not define them
@@ -46,45 +148,13 @@ std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::v
     std::string sName = uIns.firstItem.name;
 
     if(sName == "syscall") {
-      if(unitToTranslate.size() < 2) {
-        error("Not enough args given to a syscall.", "syscall requires at least one argument. If you just want to initiate a syscall use 'call' instead");
-      }
-      // x = start , y = end
-      std::vector<util::int2d> itemGroups;
-      itemGroups.push_back(util::int2d(1,1));
-
-      int iCurItem = 1;
-      do {
-        itemGroups.back().y = iCurItem;
-        sBuild = unitToTranslate.at(iCurItem).append;
-        if(util::contains(sBuild,',')) {
-          if(util::contains(sBuild,'"')) {
-            // TODO: handle
-            error("Compiler unhandled in current version.","Comma inside quotation mark.");
-          } else {
-            iCurItem++;
-            if(iCurItem < unitToTranslate.size()) {
-              itemGroups.push_back(util::int2d(iCurItem,iCurItem));
-            }
-            continue;
-          }
-        }
-
-        iCurItem++;
-      } while (iCurItem < unitToTranslate.size());
-
-      for(auto& group : itemGroups) {
-        if(group.x != group.y) {
-
-        } else {
-          //TODO: working here
-        }
-      }
-
+      resolve_syscall(output, unitToTranslate);
     } else {
       error("Attempted to translate undefined unique '" + sName + "'", "Verify spelling or define new.");
     }
   }
+
+  Log->v("Finished translating unit '" + uIns.firstItem.name + "'");
 
   return output;
 }
@@ -300,7 +370,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
 
   for(auto& line : currentBrick.vContents) {
     if(vMultiLine.size() > 0) {
-      if(line[0] == '}') {
+      if(line.length() > 0 && line[0] == '}') {
         auto uI = unitInstructions(vBuildUnit);
         std::vector<std::string> temp = translateMultiUnit(uI, vMultiLine);
         vMultiLine.clear();
@@ -499,11 +569,11 @@ void basm::loadTranslations() {
   std::string sName;
 
   Log->v("Attempting to open SQLite DB file...");
-  int openDB = sqlite3_open("Basm/basmTranslation.db", &db);
+  int openDB = sqlite3_open(util::switchOnAlt("BullScript_CPP_Compiler/Basm/basmTranslation.db", "Basm/basmTranslation.db"), &db);
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);
-    error("Error loading basmTranslation DB! Error: " + err, "Verify DB file exists with name \"basmTranslation.db\"");
+    error("Error loading basmTranslation DB! Error: " + err, "Verify DB file exists at: " + std::string(std::filesystem::current_path().c_str()) + "/" + util::switchOnAlt("BullScript_CPP_Compiler/Basm/basmTranslation.db", "Basm/basmTranslation.db"));
   }
   Log->v("SQLite DB file:","Basm/basmTranslation.db","successfully opened.");
 
