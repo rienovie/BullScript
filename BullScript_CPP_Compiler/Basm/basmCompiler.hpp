@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stack>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -84,6 +85,7 @@ public:
 	static std::vector<std::string> vSection_rodata;
 	static std::vector<std::string> vSection_text;
 	
+	static std::stack<std::string> workStack;
 
 	static void compileFromFile(std::string sFile);
 

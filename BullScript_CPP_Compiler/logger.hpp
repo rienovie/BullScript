@@ -60,26 +60,28 @@ public:
 
 	// Log Type "Warning"
 	// Will log with warning tag
+	// Will always print
 	template <typename... Args>
 	static void w(Args... inputArgs) {
 		if(!bInitialized) {
 			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::cPrint("yellow","-",inputArgs...); }
+		util::cPrint("yellow","-",inputArgs...);
 		writeToFile("W:",inputArgs...);
 	}
 
 	// Log Type "Error"
 	// Will log with error tag
 	// Will throw with throw option
+	// Will always print
 	template <typename... Args>
 	static void e(Args... inputArgs) {
 		if(!bInitialized) {
 			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
 			return;
 		}
-		if(Options.bPrint) { util::cPrint("red","-",inputArgs...); }
+		util::cPrint("red","-",inputArgs...);
 		writeToFile("E:",inputArgs...);
 		if(Options.bThrowOnError) {
 			throw;

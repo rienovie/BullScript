@@ -1,5 +1,4 @@
 #include "logger.hpp"
-#include "Util/util.hpp"
 #include <filesystem>
 
 std::string logClass::sOutputFile;
@@ -8,7 +7,6 @@ logOptsStruct logClass::Options;
 bool logClass::bInitialized = false;
 
 void logClass::initialize() {
-    util::qPrint("Attempting to initialize logger.");
     int iFileCount = 0;
     for(auto& item : std::filesystem::directory_iterator {Options.sOutputLocation}) {
         if(item.is_regular_file()) {
