@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     Log = std::make_unique<logClass>();
     Log->Options.sOutputLocation = "logs/";
-    Log->Options.bVerbose = false;
+    Log->Options.bVerbose = true;
     Log->Options.bPrint = true;
     Log->Options.bThrowOnError = false;
     Log->Options.iMaxLogCount = 3;

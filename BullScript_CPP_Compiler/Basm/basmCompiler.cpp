@@ -9,7 +9,6 @@
 std::map<std::string,basm::brick> basm::mBricks {};
 std::map<std::string,basm::asmTranslation> basm::mTranslations {};
 std::map<std::string,basm::asmValue> basm::mValues {};
-std::map<std::string,std::vector<std::string>> basm::mTranslatedDefinitions;
 std::map<std::string,std::string> basm::mSLITs {};
 std::map<std::string,std::string> basm::mXLITs {};
 
@@ -61,7 +60,38 @@ void basm::compileFromFile(std::string sFile) {
 std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInfo itemToResolve) {
   workStack.push("Resolving item " + itemToResolve.name);
 
+  if(itemToResolve.type == itemType::IFN) {
+    error("Attempting to resolve an inline function as an item.", "Report compiler bug.");
+  }
+
   std::string sOutput;
+
+  itemType ty = itemToResolve.type;
+  if(ty == itemType::VAR || ty == itemType::FN) {
+    if(!verifiedDefined.contains(itemToResolve.name) || !currentDefines.contains(itemToResolve.name)) {
+      if(!mBricks.contains(itemToResolve.name)) {
+        error("Brick '" + itemToResolve.name + "' is not found.", "Verify spelling or define.");
+      }
+      defineBrick(mBricks.at(itemToResolve.name));
+    }
+    if(ty == itemType::FN) {
+      itemToResolve.translatedValue = getFnName(itemToResolve.name);
+    } else {
+      itemToResolve.translatedValue = itemToResolve.name;
+    }
+  } else if(ty == itemType::SLIT || ty == itemType::XLIT) {
+    if(!verifiedDefined.contains(itemToResolve.name)) {
+      vSection_data.push_back(itemToResolve.name + ": db " + itemToResolve.translatedValue);
+      verifiedDefined.insert(itemToResolve.name);
+    }
+    itemToResolve.translatedValue = itemToResolve.name;
+  } else if(ty == itemType::) {
+    //TODO: working here
+  } else {
+    error("ItemType with value of " + std::to_string(ty) + " is not handled.", "Report Compiler Bug.");
+  }
+
+  sOutput = itemToResolve.prepend + itemToResolve.translatedValue + itemToResolve.append;
 
   workStack.pop();
   return sOutput;
@@ -103,28 +133,13 @@ void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm
       sBuild = resolveItem(outputRef, translationUnit.at(curGroup.x));
     }
 
-    switch (itemGroups.size()) {
-      case 2:
-        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg1").x86_64 + ", " + sBuild);
-        break;
-      case 3:
-        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg2").x86_64 + ", " + sBuild);
-        break;
-      case 4:
-        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg3").x86_64 + ", " + sBuild);
-        break;
-      case 5:
-        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg4").x86_64 + ", " + sBuild);
-        break;
-      case 6:
-        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg5").x86_64 + ", " + sBuild);
-        break;
-      case 7:
-        outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("arg6").x86_64 + ", " + sBuild);
-        break;
-      default:
-        error("Too many args given to syscall.", "Max of 7 args for a syscall and you gave " + std::to_string(itemGroups.size()) + ".");
+    if(itemGroups.size() > 7) {
+      error("Too many args given to syscall.", "Max of 7 args for a syscall and you gave " + std::to_string(itemGroups.size()) + ".");
     }
+
+    std::string argLookUp = "arg" + std::to_string(itemGroups.size()-1);
+
+    outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at(argLookUp).x86_64 + ", " + sBuild);
 
     itemGroups.pop_back();
 
@@ -204,8 +219,8 @@ std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::v
   return output;
 }
 
-std::vector<std::string> basm::translateMultiUnit(basm::unitInstructions uIns, std::vector<std::string> vLines) {
-  workStack.push("Translating Multi Unit " + uIns.firstItem.name);
+std::vector<std::string> basm::translateMultiUnit(std::vector<std::string> vLines) {
+  workStack.push("Translating Multi Unit '" + vLines.front() + "'");
 
   std::vector<std::string> output;
 
@@ -227,7 +242,10 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
   Log->v("getItemInfo called for item '" + sItem + "'");
 
   if(sItem.length() < 2) {
-    error("Attempted to get info from an item '" + sItem + "' but this is invalid.", "Item length is less than two, report compiler error.");
+    // TODO: remove the log here after verifing no hold ups in compiler
+    Log->w("getItemInfo item length less than 2. Possible error?");
+    workStack.pop();
+    return output;
   }
 
   // maybe can merge this into a single for loop but meh for now
@@ -390,12 +408,14 @@ std::string basm::getFnName(std::string sBrickName) {
   int iDepth = 1;
   do {
     for(int i = 0; i < iDepth; i++) {
-      sCurBrick = mBricks.at(sCurBrick).sKeyword;
-    }
-    if(sCurBrick == "define" || sCurBrick == "fn") {
-      sBuild = "fn_";
-    } else {
-      sBuild = sCurBrick + "_";
+      if(sCurBrick == "define" || sCurBrick == "fn") {
+        sBuild = "fn_";
+      } else if (!mBricks.contains(sCurBrick)) {
+        error("Failed to find brick '" + sCurBrick + "' when attempting to getFnName of '" + sBrickName + "'", "Make sure '" + sCurBrick + "' is already defined.");
+      } else {
+        sCurBrick = mBricks.at(sCurBrick).sKeyword;
+        sBuild = sCurBrick + "_";
+      }
     }
     sOutput = sBuild + sOutput;
     iDepth++;
@@ -427,8 +447,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
   for(auto& line : currentBrick.vContents) {
     if(vMultiLine.size() > 0) {
       if(line.length() > 0 && line[0] == '}') {
-        auto uI = unitInstructions(vBuildUnit);
-        std::vector<std::string> temp = translateMultiUnit(uI, vMultiLine);
+        std::vector<std::string> temp = translateMultiUnit(vMultiLine);
         vMultiLine.clear();
         std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
         vOutput = vMultiLine;
