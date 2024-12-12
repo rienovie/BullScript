@@ -144,6 +144,7 @@ private:
 		branchOutFromBrick(brick& branchBrick);
 
 	static std::vector<std::string>
+		splitLineToItems(std::string& sLineToSplit),
 		translateMultiUnit(std::vector<std::string> vLines),
 		translateUnit(unitInstructions uIns,std::vector<itemInfo> unitToTranslate);
 	static std::string

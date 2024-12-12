@@ -85,8 +85,19 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
       verifiedDefined.insert(itemToResolve.name);
     }
     itemToResolve.translatedValue = itemToResolve.name;
-  } else if(ty == itemType::) {
-    //TODO: working here
+  } else if(ty == itemType::GRP) {
+    //TODO: verify where grp item info goes to either the name or translatedValue
+    if(util::contains(itemToResolve.translatedValue,"!<>=")) {
+      // TODO: handle conditionals
+    } else {
+      std::vector<itemInfo> grpSubUnits;
+      std::vector<std::string> vSplitLine = splitLineToItems(itemToResolve.translatedValue);
+      for(auto& i : vSplitLine) {
+        grpSubUnits.push_back(getItemInfo(i));
+      }
+      resolveSubUnits(outputRef, grpSubUnits);
+    }
+
   } else {
     error("ItemType with value of " + std::to_string(ty) + " is not handled.", "Report Compiler Bug.");
   }
@@ -99,6 +110,7 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
 
 // NOTE: only send end unit not entire full unit
 // i.e. send only items within a single ","
+// Also handles itemType::GRP
 basm::itemInfo basm::resolveSubUnits(std::vector<std::string>& outputRef,std::vector<basm::itemInfo>& subUnits) {
   workStack.push("Resolving sub units with " + std::to_string(subUnits.size()) + " items");
 
@@ -425,6 +437,58 @@ std::string basm::getFnName(std::string sBrickName) {
   return sOutput;
 }
 
+std::vector<std::string> basm::splitLineToItems(std::string& sLineToSplit){
+  workStack.push("Spliting line " + sLineToSplit + " into item list.");
+
+  std::string sBuild = "";
+  bool
+    bInsideParen = false,
+    bInsideQuote = false,
+    bEscape = false;
+  char curChar;
+  std::vector<std::string> vOutput;
+
+  for(int i = 0; i < sLineToSplit.length(); i++) {
+      curChar = sLineToSplit[i];
+      if(bEscape) {
+        bEscape = false;
+      } else if(curChar == '\\') {
+        bEscape = true;
+      } else if(bInsideParen) {
+        if(curChar == ')') {
+          bInsideParen = false;
+        }
+      } else if(bInsideQuote) {
+        if(curChar == '"') {
+          bInsideQuote = false;
+        }
+      } else if(curChar == '"') {
+        bInsideQuote = true;
+      } else if(curChar == '(') {
+        bInsideQuote = true;
+      } else if(curChar == ' ') {
+        if(sBuild.length() < 1) {
+          continue;
+        }
+        vOutput.push_back(sBuild);
+        sBuild.clear();
+        continue;
+      }
+
+      sBuild.push_back(curChar);
+
+    }
+
+    if(sBuild.length() > 0) {
+      vOutput.push_back(sBuild);
+    }
+
+
+  workStack.pop();
+  return vOutput;
+
+}
+
 void basm::defineFunctionContents(basm::brick& currentBrick) {
   workStack.push("Defining function contents for brick " + currentBrick.sName);
 
@@ -461,46 +525,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
 
     vBuildUnit.clear();
 
-    std::string sBuild = "";
-    bool
-      bInsideParen = false,
-      bInsideQuote = false,
-      bEscape = false;
-    char curChar;
-    for(int i = 0; i < line.length(); i++) {
-      curChar = line[i];
-      if(bEscape) {
-        bEscape = false;
-      } else if(curChar == '\\') {
-        bEscape = true;
-      } else if(bInsideParen) {
-        if(curChar == ')') {
-          bInsideParen = false;
-        }
-      } else if(bInsideQuote) {
-        if(curChar == '"') {
-          bInsideQuote = false;
-        }
-      } else if(curChar == '"') {
-        bInsideQuote = true;
-      } else if(curChar == '(') {
-        bInsideQuote = true;
-      } else if(curChar == ' ') {
-        if(sBuild.length() < 1) {
-          continue;
-        }
-        vSplitLine.push_back(sBuild);
-        sBuild.clear();
-        continue;
-      }
-
-      sBuild.push_back(curChar);
-
-    }
-
-    if(sBuild.length() > 0) {
-      vSplitLine.push_back(sBuild);
-    }
+    vSplitLine = splitLineToItems(line);
 
     if(vSplitLine.at(vSplitLine.size() - 1) == "{") {
       vMultiLine.push_back(line);
