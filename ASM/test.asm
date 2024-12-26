@@ -49,7 +49,7 @@ fn_stackPop:
 
     ret
 
-_func:
+_define_aCoolThing:
     mov r15, r14 ; input to temp
     call fn_stackPush ; pushes input/output
     mov r14, r15 ; move input back
@@ -60,27 +60,27 @@ _func:
 
     ret
 
-fn_func_length:
+_define_aCoolThing_length:
     mov r11, r14
 
-    l_length_nextChar:
+    l_define_aCoolThing_length_nextChar:
     cmp byte [r11], 0
-    je l_length_finish
+    je l_define_aCoolThing_length_finish
     inc r11
-    jmp l_length_nextChar
+    jmp l_define_aCoolThing_length_nextChar
 
-    l_length_finish:
+    l_define_aCoolThing_length_finish:
     sub r11, r14
 
     ret
 
-fn_func_print:
+_define_aCoolThing_print:
     mov rax, 1
     mov rdi, 1
     mov rsi, r14
 
-    mov r13, fn_func_length
-    call _func
+    mov r13, _define_aCoolThing_length
+    call _define_aCoolThing
     mov rdx, r11
 
     syscall
@@ -94,20 +94,13 @@ _exit:
 
 _start:
     mov r14, message
-    mov r13, fn_func_print
-    call _func
+    mov r13, _define_aCoolThing_print
+    call _define_aCoolThing
 
     %if bShouldPrint
     mov r14, anotherMessage
-    mov r13, fn_func_print
-    call _func
-    %endif
-
-    ; TODO: this doesn't work right figure out why
-    %if aValue < anotherValue
-    mov r14, aMessage
-    mov r13, fn_func_print
-    call _func
+    mov r13, _define_aCoolThing_print
+    call _define_aCoolThing
     %endif
 
     call _exit

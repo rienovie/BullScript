@@ -146,13 +146,12 @@ private:
 	static std::vector<std::string>
 		splitLineToItems(std::string& sLineToSplit),
 		translateMultiUnit(std::vector<std::string> vLines),
-		translateUnit(unitInstructions uIns,std::vector<itemInfo> unitToTranslate);
+		translateUnit(std::vector<itemInfo> unitToTranslate);
 	static std::string
 		getFnName(std::string sBrickName),
-		resolveItem(std::vector<std::string>& outputRef,itemInfo itemToResolve);
-	static itemInfo
-		getItemInfo(std::string sItem),
-		resolveSubUnits(std::vector<std::string>& outputRef,std::vector<itemInfo>& subUnits);
+		resolveItem(std::vector<std::string>& outputRef,itemInfo itemToResolve),
+		resolveSubItems(std::vector<std::string>& outputRef,std::vector<itemInfo>& subItems);
+	static itemInfo getItemInfo(std::string sItem);
 	static std::vector<util::int2d> getItemGroups(std::vector<itemInfo>& translationUnit);
 
 	// Specific Resolutions

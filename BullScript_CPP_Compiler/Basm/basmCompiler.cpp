@@ -1,5 +1,4 @@
 #include "basmCompiler.hpp"
-#include <algorithm>
 #include <filesystem>
 #include <sqlite3.h>
 #include <string>
@@ -61,7 +60,7 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
   workStack.push("Resolving item " + itemToResolve.name);
 
   if(itemToResolve.type == itemType::IFN) {
-    error("Attempting to resolve an inline function as an item.", "Report compiler bug.");
+    error("Unable to use an inline function as an item. Item attempted: " + itemToResolve.name, "Inline functions can only be used as the first line item.");
   }
 
   std::string sOutput;
@@ -86,16 +85,15 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
     }
     itemToResolve.translatedValue = itemToResolve.name;
   } else if(ty == itemType::GRP) {
-    //TODO: verify where grp item info goes to either the name or translatedValue
-    if(util::contains(itemToResolve.translatedValue,"!<>=")) {
+    if(util::containsAny(itemToResolve.translatedValue,"!<>=")) {
       // TODO: handle conditionals
     } else {
-      std::vector<itemInfo> grpSubUnits;
+      std::vector<itemInfo> grpSubItems;
       std::vector<std::string> vSplitLine = splitLineToItems(itemToResolve.translatedValue);
       for(auto& i : vSplitLine) {
-        grpSubUnits.push_back(getItemInfo(i));
+        grpSubItems.push_back(getItemInfo(i));
       }
-      resolveSubUnits(outputRef, grpSubUnits);
+      itemToResolve.translatedValue = resolveSubItems(outputRef, grpSubItems);
     }
 
   } else {
@@ -110,14 +108,21 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
 
 // NOTE: only send end unit not entire full unit
 // i.e. send only items within a single ","
-// Also handles itemType::GRP
-basm::itemInfo basm::resolveSubUnits(std::vector<std::string>& outputRef,std::vector<basm::itemInfo>& subUnits) {
-  workStack.push("Resolving sub units with " + std::to_string(subUnits.size()) + " items");
+// This will return the final item resolution
+std::string basm::resolveSubItems(std::vector<std::string>& outputRef,std::vector<basm::itemInfo>& subItems) {
+  workStack.push("Resolving sub units with " + std::to_string(subItems.size()) + " items");
 
-  itemInfo resolution;
+  std::string sOutput;
+
+  auto temp = translateUnit(subItems);
+  util::appendVectors(outputRef, temp);
+
+  // NOTE: pretty sure the translations would have the value in the output
+  // TODO: should check
+  sOutput = mTranslations.at("output").x86_64;
 
   workStack.pop();
-  return resolution;
+  return sOutput;
 }
 
 void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm::itemInfo>& translationUnit) {
@@ -140,7 +145,7 @@ void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm
       for(int i = curGroup.x; i < curGroup.y + 1; i++) {
         subUnits.push_back(translationUnit.at(i));
       }
-      sBuild = resolveItem(outputRef,resolveSubUnits(outputRef, subUnits));
+      sBuild = resolveSubItems(outputRef, subUnits);
     } else {
       sBuild = resolveItem(outputRef, translationUnit.at(curGroup.x));
     }
@@ -157,13 +162,18 @@ void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm
 
   }
 
-  // TODO:
-  // if more than a single item for first arg
+  sBuild = mTranslations.at("move").x86_64 + " " + mTranslations.at("sys").x86_64 + ", ";
   if(itemGroups.at(0).y > 1) {
-    
+    subUnits.clear();
+    for(int i = 1; i < itemGroups.at(0).y + 1; i++) {
+      subUnits.push_back(translationUnit.at(i));
+    }
+    sBuild.append(resolveSubItems(outputRef,subUnits));
   } else {
-    outputRef.push_back(mTranslations.at("move").x86_64 + " " + mTranslations.at("sys").x86_64 + ", " + resolveItem(outputRef, translationUnit.at(1)));
+    sBuild.append(resolveItem(outputRef, translationUnit.at(1)));
   }
+
+  outputRef.push_back(sBuild);
 
   workStack.pop();
 }
@@ -196,19 +206,21 @@ std::vector<util::int2d> basm::getItemGroups(std::vector<basm::itemInfo>& transl
   return output;
 }
 
-std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::vector<basm::itemInfo> unitToTranslate) {
+std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToTranslate) {
+  auto uIns = unitInstructions(unitToTranslate);
+  if(uIns.firstItem.name.empty()) {
+    return std::vector<std::string>();
+  }
+
   workStack.push("Translating unit " + uIns.firstItem.name);
 
   std::vector<std::string> output;
-  std::string sBuild = "";
 
   Log->v("Translating unit '" + uIns.firstItem.name + "'");
 
-  // TODO: define
-  // check if bricks are defined, if not define them
-
   // NOTE: handle all unique items here / probably need seperate functions for each
   if(uIns.bFunction) {
+
 
   } else if(uIns.firstItem.type == itemType::UNI) {
     std::string sName = uIns.firstItem.name;
@@ -221,11 +233,12 @@ std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::v
   } else {
     std::vector<util::int2d> groups = getItemGroups(unitToTranslate);
     while (groups.size() > 0) {
-    // TODO: working here
+
     }
   }
 
   Log->v("Finished translating unit '" + uIns.firstItem.name + "'");
+  Log->v("Unit contents:\n" + util::vectorToSingleStr(output));
 
   workStack.pop();
   return output;
@@ -234,13 +247,21 @@ std::vector<std::string> basm::translateUnit(basm::unitInstructions uIns, std::v
 std::vector<std::string> basm::translateMultiUnit(std::vector<std::string> vLines) {
   workStack.push("Translating Multi Unit '" + vLines.front() + "'");
 
-  std::vector<std::string> output;
+  std::vector<std::string> vOutput, vTemp;
+  std::vector<basm::itemInfo> curUnit;
 
-  // TODO: define
-  // check if bricks are defined, if not define them
+  for(auto& line : vLines) {
+    curUnit.clear();
+    vTemp.clear();
+    for(auto& item : splitLineToItems(line)) {
+      curUnit.push_back(getItemInfo(item));
+    }
+    vTemp = translateUnit(curUnit);
+    util::appendVectors(vOutput, vTemp);
+  }
 
   workStack.pop();
-  return output;
+  return vOutput;
 }
 
 basm::itemInfo basm::getItemInfo(std::string sItem) {
@@ -292,7 +313,9 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
           }
           sBuild.append(", ");
           i++;
-          sToValue = curChar + sItem[i];
+          // NOTE: had to push back instead of sToValue = curChar + sItem[i] because it combines them to a single char value instead of two chars i.e. '\n' instead of '\' and 'n'
+          sToValue.push_back(curChar);
+          sToValue.push_back(sItem[i]);
           if(!mValues.contains(sToValue)) {
             error("Complex string literal item '" + sToValue + "' is not found.", "Verify spelling and if correct plz report to compiler.");
           }
@@ -345,7 +368,7 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
   // val
   } else if (curChar == '$' || curChar == '#') {
     if(!mValues.contains(sItem)) {
-      error("Item '" + sItem + "' is not found.", "Verify spelling and if correct plz report to compiler.");
+      error("Value '" + sItem + "' is not found.", "Verify spelling and if correct plz report to compiler.");
     }
     output.type = itemType::VAL;
     output.name = sItem;
@@ -512,9 +535,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
     if(vMultiLine.size() > 0) {
       if(line.length() > 0 && line[0] == '}') {
         std::vector<std::string> temp = translateMultiUnit(vMultiLine);
-        vMultiLine.clear();
-        std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
-        vOutput = vMultiLine;
+        util::appendVectors(vOutput, temp);
         vMultiLine.clear();
         continue;
       } else {
@@ -536,13 +557,12 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
       vBuildUnit.push_back(getItemInfo(i));
     }
 
-    auto uI = unitInstructions(vBuildUnit);
-    std::vector<std::string> temp = translateUnit(uI, vBuildUnit);
-    vMultiLine.clear();
-    std::merge(vOutput.begin(),vOutput.end(),temp.begin(),temp.end(),vMultiLine.begin());
-    vOutput = vMultiLine;
+    std::vector<std::string> temp = translateUnit(vBuildUnit);
+    util::appendVectors(vOutput, temp);
 
   }
+
+  util::appendVectors(vSection_text, vOutput);
 
   Log->v(currentBrick.sName," contents defined.");
 

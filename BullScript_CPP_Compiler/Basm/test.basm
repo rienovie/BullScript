@@ -120,6 +120,7 @@ define if : inline {
 }
 
 ; "jumpFalse" takes last condition eval and jumps if false
+; will probably require the "condition" attribute to make it more explicit
 ; when "condition" is called inside a function/container, will assume a condition statement input
 ; a condition statement must be surrounded with parenthesis
 ; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
@@ -127,7 +128,7 @@ define if : inline {
 ; comparsions are:
 ;   == , != , < , > , <= , >=
 
-define while : inline {
+define while : inline, condition {
 	label whileJump
 	if condition {
 		contents
