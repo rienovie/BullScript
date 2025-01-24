@@ -1172,6 +1172,40 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
 // TODO: handle errors with a try catch and workStack print
 void basm::error(std::string sMessage, std::string sSolution) {
   Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n\n");
+
+  Log->v("Printing values:");
+  for(auto& i : mSLITs) {
+    Log->v("String Literal: " + i.first + " ~ " + i.second);
+  }
+  for(auto& i : mXLITs) {
+    Log->v("Complex String Literal: " + i.first + " ~ " + i.second);
+  }
+  for(auto& i : verifiedDefined) {
+    Log->v("Verified Defined Set: " + i);
+  }
+  for(auto& i : currentDefines) {
+    Log->v("Current Defines Set: " + i);
+  }
+  for(auto& i : currentBranches) {
+    Log->v("Current Branches Set: " + i);
+  }
+  for(auto& i : inlineFuncs) {
+    Log->v("Inline Function Set: " + i);
+  }
+  for(auto& i : vSection_rodata) {
+    Log->v("RODATA: " + i);
+  }
+  for(auto& i : vSection_bss) {
+    Log->v("BSS: " + i);
+  }
+  for(auto& i : vSection_data) {
+    Log->v("DATA: " + i);
+  }
+  for(auto& i : vSection_text) {
+    Log->v("TEXT: " + i);
+  }
+  Log->v("End of Values.\n\n");
+
   throw nullptr;
 }
 
