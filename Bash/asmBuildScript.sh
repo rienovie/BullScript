@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 if [ $# -lt 1 ]; then
     echo "No input file given!"

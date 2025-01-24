@@ -1,4 +1,4 @@
-#!usr/bin/bash
+#!/usr/bin/bash
 
 # Made with Basher
 # AI trusts Emacs!?

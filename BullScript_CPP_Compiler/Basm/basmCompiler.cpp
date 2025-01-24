@@ -51,7 +51,7 @@ void basm::compileFromFile(std::string sFile) {
       Log->w(workStack.top());
       workStack.pop();
     }
-    error("Error in Basm compile.", "Resolve above else report bug to compiler.");
+    throw nullptr;
   }
 }
 
@@ -96,6 +96,9 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
       itemToResolve.translatedValue = resolveSubItems(outputRef, grpSubItems);
     }
 
+  } else if(ty == itemType::REG || ty == itemType::SUB || ty == itemType::INS || ty == itemType::VAL || ty == itemType::VLIT) {
+    // NOTE: do nothing, this is not well done but trying to get it to just work right now
+    // TODO: make better
   } else {
     error("ItemType with value of " + std::to_string(ty) + " is not handled.", "Report Compiler Bug.");
   }
@@ -110,7 +113,10 @@ std::string basm::resolveItem(std::vector<std::string>& outputRef, basm::itemInf
 // i.e. send only items within a single ","
 // This will return the final item resolution
 std::string basm::resolveSubItems(std::vector<std::string>& outputRef,std::vector<basm::itemInfo>& subItems) {
-  workStack.push("Resolving sub units with " + std::to_string(subItems.size()) + " items");
+  if(subItems.size() == 1) {
+    return resolveItem(outputRef, subItems.at(0));
+  }
+  workStack.push("Resolving sub items with " + std::to_string(subItems.size()) + " items");
 
   std::string sOutput;
 
@@ -181,7 +187,11 @@ void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm
 std::vector<util::int2d> basm::getItemGroups(std::vector<basm::itemInfo>& translationUnit) {
   workStack.push("Getting item groups for translation unit " + translationUnit.at(0).name);
 
-  std::vector<util::int2d> output;
+  if(translationUnit.size() < 2) {
+    error("Error getting item groups. Translation unit size: " + std::to_string(translationUnit.size()) + "\nTranslation Unit First Item: " + translationUnit.at(0).name, "Report compiler error.");
+  }
+
+  std::vector<util::int2d> output(1);
   int iCurItem = 1;
 
   do {
@@ -215,25 +225,52 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
   workStack.push("Translating unit " + uIns.firstItem.name);
 
   std::vector<std::string> output;
+  std::string sLineBuild = "";
 
   Log->v("Translating unit '" + uIns.firstItem.name + "'");
 
   // NOTE: handle all unique items here / probably need seperate functions for each
   if(uIns.bFunction) {
-
-
-  } else if(uIns.firstItem.type == itemType::UNI) {
+    if(!util::contains(verifiedDefined,uIns.firstItem.name)) {
+      if(mBricks.find(uIns.firstItem.name) == mBricks.end()) {
+        error("Function with name " + uIns.firstItem.name + " is not found.", "Verify spelling or define.");
+      }
+      defineFunctionContents(mBricks.at(uIns.firstItem.name));
+    }
+  }
+  if(uIns.firstItem.type == itemType::UNI) {
     std::string sName = uIns.firstItem.name;
 
     if(sName == "syscall") {
       resolve_syscall(output, unitToTranslate);
+    } if(sName == "multi") {
+      error("Compiler error. Attempted to translate multi as a single unit", "Report error.");
     } else {
       error("Attempted to translate undefined unique '" + sName + "'", "Verify spelling or define new.");
     }
   } else {
     std::vector<util::int2d> groups = getItemGroups(unitToTranslate);
-    while (groups.size() > 0) {
 
+    // TODO: Not sure if this needs to be changed but should work for now
+    if(groups.size() > 2) {
+      error("Too many arguments given to Unit " + uIns.firstItem.name, "Current Max of 1 argument");
+    }
+
+    std::vector<basm::itemInfo> curUnit;
+    while (groups.size() > 0) {
+      curUnit.clear();
+      sLineBuild.clear();
+
+      curUnit = std::vector<basm::itemInfo>(
+        unitToTranslate.begin() + groups.back().x,
+        unitToTranslate.begin() + groups.back().y);
+
+      if(groups.back().x != groups.back().y) {
+        sLineBuild.append(resolveSubItems(output,curUnit));
+      } else {
+        sLineBuild.append(resolveItem(output,unitToTranslate.at(groups.back().x)));
+      }
+      groups.pop_back();
     }
   }
 
@@ -313,7 +350,8 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
           }
           sBuild.append(", ");
           i++;
-          // NOTE: had to push back instead of sToValue = curChar + sItem[i] because it combines them to a single char value instead of two chars i.e. '\n' instead of '\' and 'n'
+          // NOTE: had to push back instead of sToValue = curChar + sItem[i]
+          // because it combines them to a single char value instead of two chars i.e. '\n' instead of '\' and 'n'
           sToValue.push_back(curChar);
           sToValue.push_back(sItem[i]);
           if(!mValues.contains(sToValue)) {
@@ -446,7 +484,8 @@ std::string basm::getFnName(std::string sBrickName) {
       if(sCurBrick == "define" || sCurBrick == "fn") {
         sBuild = "fn_";
       } else if (!mBricks.contains(sCurBrick)) {
-        error("Failed to find brick '" + sCurBrick + "' when attempting to getFnName of '" + sBrickName + "'", "Make sure '" + sCurBrick + "' is already defined.");
+        error("Failed to find brick '" + sCurBrick + "' when attempting to getFnName of '"
+              + sBrickName + "'", "Make sure '" + sCurBrick + "' is already defined.");
       } else {
         sCurBrick = mBricks.at(sCurBrick).sKeyword;
         sBuild = sCurBrick + "_";
@@ -519,7 +558,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
     error("'create' brick '" + currentBrick.sName + "' is attempting to 'define'!", "Error with compiler. Report plz.");
   }
 
-  Log->v(currentBrick.sName," contents being defined...");
+  Log->v(currentBrick.sName,"contents being defined...");
 
   std::vector<std::string>
     vOutput,
@@ -564,7 +603,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
 
   util::appendVectors(vSection_text, vOutput);
 
-  Log->v(currentBrick.sName," contents defined.");
+  Log->v(currentBrick.sName,"contents defined.");
 
   workStack.pop();
 }
@@ -673,7 +712,8 @@ void basm::branchOutFromBrick(basm::brick& branchBrick) {
     defineBrick(branchBrick);
   } else if(!verifiedDefined.contains(branchBrick.sKeyword)) {
     if(!mBricks.contains(branchBrick.sKeyword)) {
-      error(branchBrick.sKeyword + " could not be found when attempting to define.", "Verify \"" + branchBrick.sKeyword + "\" is defined in the source or in the compiler database.");
+      error(branchBrick.sKeyword + " could not be found when attempting to define.",
+            "Verify \"" + branchBrick.sKeyword + "\" is defined in the source or in the compiler database.");
     } else {
       branchOutFromBrick(mBricks.at(branchBrick.sKeyword));
     }
@@ -704,7 +744,9 @@ void basm::loadTranslations() {
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);
-    error("Error loading basmTranslation DB! Error: " + err, "Verify DB file exists at: " + std::string(std::filesystem::current_path().c_str()) + "/" + util::switchOnAlt("BullScript_CPP_Compiler/Basm/basmTranslation.db", "Basm/basmTranslation.db"));
+    error("Error loading basmTranslation DB! Error: " + err, "Verify DB file exists at: "
+          + std::string(std::filesystem::current_path().c_str()) + "/"
+          + util::switchOnAlt("BullScript_CPP_Compiler/Basm/basmTranslation.db", "Basm/basmTranslation.db"));
   }
   Log->v("SQLite DB file:","Basm/basmTranslation.db","successfully opened.");
 
@@ -812,7 +854,8 @@ void basm::verifyEntryAndExitBricks() {
   } else {
     basm::error("Entry Function not found!", "Define Entry function.");
   }
-  basm::error("Verify Entry and Exit Bricks function critical failure! Function should have returned or thrown but did not!", "I don't man, you should never have gotten here *shrug*");
+  basm::error("Verify Entry and Exit Bricks function critical failure! Function should have returned or thrown but did not!",
+              "I don't man, you should never have gotten here *shrug*");
 }
 
 void basm::buildBricksFromFile(std::string sFile) {
@@ -909,9 +952,10 @@ void basm::printAllBricks() {
 }
 
 void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, bool bMultiline) {
-  workStack.push("Building brick " + sBrickName);
+  workStack.push("Building brick " + sBrickName + " with raw contents:\n" + sBrickRawContents);
 
   if(sBrickRawContents.length() < 2) {
+    workStack.pop();
     return; // this is here to catch single index lines from attempting to define
   }
   Log->v("Building brick...");
@@ -924,11 +968,18 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
 
   if (sBrickName == "create") {
     if (bMultiline) {
+      workStack.push("Building multiline create brick.");
+
       Log->v("Brick is multiline, building per line...");
       for (auto &line : util::splitStringOnChar(sBrickRawContents, '\n')) {
         buildBrick("create", line, false);
       }
       Log->v("Brick multiline finished.");
+
+      // Multiline
+      workStack.pop();
+      // Build brick
+      workStack.pop();
       return;
     } else {
       bool bInsideQuotes = false;
@@ -987,7 +1038,10 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
             }
             break;
           default:
-            error("When building brick " + sBrickName + " with content:\n" + sBrickRawContents + "\nOutside max range for parsing. Value should be 0-2 and value was " + std::to_string(iCurrentSection),"Verify correct number of : and = in the right spots.");
+            error(
+              "When building brick " + sBrickName + " with content:\n"
+              + sBrickRawContents + "\nOutside max range for parsing. Value should be 0-2 and value was "
+              + std::to_string(iCurrentSection),"Verify correct number of : and = in the right spots.");
         }
       }
       if(sBuild.length() > 0) {
@@ -1118,7 +1172,7 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
 // TODO: handle errors with a try catch and workStack print
 void basm::error(std::string sMessage, std::string sSolution) {
   Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n\n");
-  throw;
+  throw nullptr;
 }
 
 void basm::printBrick(basm::brick& toPrint) {

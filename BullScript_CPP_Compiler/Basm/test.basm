@@ -191,6 +191,7 @@ fn exit {
 
 ; the same as the _start function
 fn entry {
+	print "Hello"
 	multi print {
 		message
 		anotherMessage
