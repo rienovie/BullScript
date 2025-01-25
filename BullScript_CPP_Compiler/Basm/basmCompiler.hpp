@@ -90,6 +90,7 @@ public:
 		mXLITs;
 
 	static std::unordered_set<std::string> verifiedDefined;
+	static std::unordered_set<std::string> existingLabels;
 	static std::unordered_set<std::string> currentBranches;
 	static std::unordered_set<std::string> currentDefines;
 	static std::unordered_set<std::string> inlineFuncs;

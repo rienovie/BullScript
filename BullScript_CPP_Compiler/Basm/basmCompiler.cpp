@@ -15,6 +15,7 @@ std::unordered_set<std::string> basm::verifiedDefined {};
 std::unordered_set<std::string> basm::currentBranches {};
 std::unordered_set<std::string> basm::currentDefines {};
 std::unordered_set<std::string> basm::inlineFuncs {};
+std::unordered_set<std::string> basm::existingLabels {};
 
 std::vector<std::string> basm::vSection_data;
 std::vector<std::string> basm::vSection_bss;
@@ -225,11 +226,10 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
   workStack.push("Translating unit " + uIns.firstItem.name);
 
   std::vector<std::string> output;
-  std::string sLineBuild = "";
+  std::string sBuild = "";
 
   Log->v("Translating unit '" + uIns.firstItem.name + "'");
 
-  // NOTE: handle all unique items here / probably need seperate functions for each
   if(uIns.bFunction) {
     if(!util::contains(verifiedDefined,uIns.firstItem.name)) {
       if(mBricks.find(uIns.firstItem.name) == mBricks.end()) {
@@ -238,13 +238,26 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
       defineFunctionContents(mBricks.at(uIns.firstItem.name));
     }
   }
+  // NOTE: handle all unique items here / probably need seperate functions for each
   if(uIns.firstItem.type == itemType::UNI) {
     std::string sName = uIns.firstItem.name;
 
     if(sName == "syscall") {
       resolve_syscall(output, unitToTranslate);
-    } if(sName == "multi") {
+    } else if(sName == "multi") {
       error("Compiler error. Attempted to translate multi as a single unit", "Report error.");
+
+    } else if(sName == "label") {
+      // TODO: I want to have the function name added to the label
+      sBuild = "LBL_" + unitToTranslate.back().name + ":";
+
+      if(util::contains(existingLabels,sBuild)) {
+        error("Duplicate found for label: " + unitToTranslate.back().name,"Rename duplicated label.");
+      }
+
+      output.push_back(sBuild);
+      existingLabels.emplace(sBuild);
+
     } else {
       error("Attempted to translate undefined unique '" + sName + "'", "Verify spelling or define new.");
     }
@@ -256,22 +269,32 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
       error("Too many arguments given to Unit " + uIns.firstItem.name, "Current Max of 1 argument");
     }
 
+    // BUG: this does not work, currently just focusing on getting the entire process done
+    // TODO: will fix later
     std::vector<basm::itemInfo> curUnit;
     while (groups.size() > 0) {
       curUnit.clear();
-      sLineBuild.clear();
 
       curUnit = std::vector<basm::itemInfo>(
         unitToTranslate.begin() + groups.back().x,
         unitToTranslate.begin() + groups.back().y);
 
-      if(groups.back().x != groups.back().y) {
-        sLineBuild.append(resolveSubItems(output,curUnit));
-      } else {
-        sLineBuild.append(resolveItem(output,unitToTranslate.at(groups.back().x)));
+      if(groups.size() == 2) {
+        sBuild = ", ";
+      } else if(groups.size() == 1) {
+        sBuild = " " + sBuild;
       }
+
+      if(groups.back().x != groups.back().y) {
+        sBuild = resolveSubItems(output,curUnit) + sBuild;
+      } else {
+        sBuild = resolveItem(output,unitToTranslate.at(groups.back().x)) + sBuild;
+      }
+
+
       groups.pop_back();
     }
+    output.push_back(sBuild);
   }
 
   Log->v("Finished translating unit '" + uIns.firstItem.name + "'");
@@ -366,7 +389,7 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
               bInQuotes = true;
             }
           }
-        } else {
+        } else if(i != sItem.length() - 1){
           sBuild.push_back(curChar);
           bInQuotes = true;
         }
@@ -465,9 +488,9 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
         error("Item type value of '" + std::to_string(item.type) + "' is out of bounds.", "DB error, verify DB file or report.");
     }
 
-  // could not find
   } else {
-    error("Unable to find item '" + sItem + "' when attempting to getItemInfo.","Verify spelling or define item.");
+    output.name = sItem;
+    output.translatedValue = sItem;
   }
 
   workStack.pop();
@@ -1174,6 +1197,7 @@ void basm::error(std::string sMessage, std::string sSolution) {
   Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n\n");
 
   Log->v("Printing values:");
+
   for(auto& i : mSLITs) {
     Log->v("String Literal: " + i.first + " ~ " + i.second);
   }
@@ -1204,6 +1228,10 @@ void basm::error(std::string sMessage, std::string sSolution) {
   for(auto& i : vSection_text) {
     Log->v("TEXT: " + i);
   }
+  for(auto& i : existingLabels) {
+    Log->v("LABEL: " + i);
+  }
+
   Log->v("End of Values.\n\n");
 
   throw nullptr;
