@@ -1,30 +1,58 @@
+; Basm get's translated directly into ASM (Nasm)
+; BullScript will be written ontop of Basm
+; BullScript syntax will be less picky than Basm is because more care should be used when writing it
+; The theory I have between the two is:
+; BullScript - you should be able to stumble into working code
+; Basm - you need to know what you're doing to have working code
+
+; But Basm (I think) will be more universal and easier to read than other ASM
+
 ; Some basics
 ; <- used for comments
 
 ; values are decimal assumed
+; 10		valid decimal value
+; 10.0		not valid syntax
+
 ; binary 0b prefix
+; must be lower case b because I think it's more readable
+; 0b1001	valid binary value
+; 0B1001	not valid syntax
+
 ; hex 0x prefix
+; must be lower case x because I think it's more readable
+; letters in value (a-f) are NOT case sensitive
+; 0x2c		valid hex value
+; 0x2C		valid hex value
+; 0X2c		not valid syntax
+
 ; float e{x} suffix
+; must be lower case e because I think it's more readable (again)
+; 10.0e0	valid float value
+; 10e0		valid float value
+; 10E0		not valid syntax
+; 10e		not valid syntax
+; 10.0		not valid syntax (will probably be valid in BullScript but not here)
 
 ; variables are assumed to vary in value unless specfied otherwise
-; This assumption will carry to bullscript
+; This assumption will carry to BullScript
 ; Bullscript will have an enforce option that requires "mutable" for non-const variables but this will not be the default
 
-; when value set will go into .data
-; when value not set will go into .bss
-; const variables will go into .rodata
+; when value set will go into .data (Nasm)
+; when value not set will go into .bss (Nasm)
+; const variables will go into .rodata (Nasm)
 ; you must specify the size to allocate with uninitialized variables in the attributes
 
-; attributes are the cornerstone of the language that will carry to bullscript
-; the ":" will be used at declaration of type/function before the definition
+; attributes are the cornerstone of the language that will carry to BullScript
+; the ":" will be used at declaration of type/function before the definition/value
 ; KEYWORD NAME : ATTRIBUTES = VALUE
 ; KEYWORD NAME : ATTRIBUTES {DEFINITION}
 
 ; example of simple variable creation
-; create VarName : readOnly, db = VALUE
 create message : const, 8b = "Hello World!\n"
+; create VarName : readOnly, db = VALUE
 
-; the line above has a space after message and before const
+; the variable declaration above has a space after message and before const
 ; the compiler spilts lines by spaces so there must be space between items
 ; the only exception is the comma which can be handled as part of another item
 
@@ -43,10 +71,8 @@ create {
 
 ; when using "{}" in basm you must have the open on the first line
 ; and you must have the close on a line by itself
-; this will not carry over into bullscript but forces proper usage in basm
 
-
-; define is used to make a new container that you can use to define something else
+; define is used to make a new container (wrapper)
 define aCoolThing {
 	move tempInput, input
 	stackPush
@@ -61,6 +87,8 @@ define aCoolThing {
 ; in the above container tempInput, input, tempOutput, and output are all registers
 ; "contents" is the keyword that the container surrounds therefore all containers must have "contents"
 ; stackPush and stackPop are defined below
+; Basm does not require functions to be named in order
+; The compiler does a first pass that gets the name of each function and only attempts to translate functions when they are used
 
 ; fn is used to define generic functions
 fn stackPush {
@@ -89,7 +117,8 @@ fn stackPush {
 	return
 }
 
-fn stackPop {
+; "required" attribute makes the compiler include the fn/var reguardless if it's used or not
+fn stackPop : required {
 	pop reg1
 
 	; Called in reverse order to maintain correct values from stack
@@ -109,20 +138,24 @@ fn stackPop {
 	return
 }
 
-
 ; All functions/containers must return but inlines cannot return
 ; "inline" means it will basically be copy-paste at the location it is called
 
-define if : inline {
+define if : inline, condition {
+	condition
 	jumpFalse ifEnd
 	contents
 	label ifEnd
 }
 
+; when "condition" is used as an attribute the define or fn requires a conditional statement input when called
+; when "condition" is called it evaluates the conditional statement
+
 ; "jumpFalse" takes last condition eval and jumps if false
-; will probably require the "condition" attribute to make it more explicit
-; when "condition" is called inside a function/container, will assume a condition statement input
+; "jumpTrue" works as expected
+; think of these as "jump if false to" and "jump if true to"
 ; a condition statement must be surrounded with parenthesis
+; example of conditional statement is below
 ; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
 ; TODO: look into if multiconditions would work in basm
 ; comparsions are:
@@ -165,8 +198,8 @@ aCoolThing print {
 	move arg1, #stdout
 	move arg2, input
 	move arg3, wordLength input
-	; "call" by itself is assumed "syscall"
-	call
+	
+	call ; "call" by itself is assumed "syscall"
 
 	syscall $write, #stdout, "\n", 1
 
@@ -179,12 +212,12 @@ aCoolThing print {
 	}
 	call
 
-
 	return
 }
 
 ; It'll be standard practice to use a "entry" & "exit" at the bottom of a file like this
 ; Both functions will be required
+; These are the only two functions that don't have returns
 fn exit {
 	syscall $exit, 0
 }
@@ -192,6 +225,7 @@ fn exit {
 ; the same as the _start function
 fn entry {
 	print "Hello\n"
+	print "hi"
 	multi print {
 		message
 		anotherMessage

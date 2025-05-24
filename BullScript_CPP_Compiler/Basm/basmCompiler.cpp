@@ -27,7 +27,7 @@ std::stack<std::string> basm::workStack;
 void basm::compileFromFile(std::string sFile) {
   try {
     workStack.push("Compiling from file " + sFile);
-    if(Log->Options.bPrint == false) {
+    if(Log->Options.bPrint != false) {
       util::qPrint("Compiling from file " + sFile);
     }
 
@@ -37,7 +37,11 @@ void basm::compileFromFile(std::string sFile) {
     buildBricksFromFile(sFile);
     verifyEntryAndExitBricks();
 
-    Log->n("Starting branch out...");
+    Log->n("Defining Required...");
+    defineRequired();
+    Log->n("Requires completed.");
+
+    Log->n("Starting branch out from entry function...");
     branchOutFromBrick(mBricks["entry"]);
     Log->n("Branch out completed.");
 
@@ -53,6 +57,14 @@ void basm::compileFromFile(std::string sFile) {
       workStack.pop();
     }
     throw nullptr;
+  }
+}
+
+void basm::defineRequired() {
+  for(auto& i : mBricks) {
+    if(util::searchVector(i.second.vAttributes, std::string("required"))) {
+      branchOutFromBrick(i.second);
+    }
   }
 }
 
@@ -188,30 +200,29 @@ void basm::resolve_syscall(std::vector<std::string>& outputRef, std::vector<basm
 std::vector<util::int2d> basm::getItemGroups(std::vector<basm::itemInfo>& translationUnit) {
   workStack.push("Getting item groups for translation unit " + translationUnit.at(0).name);
 
-  if(translationUnit.size() < 2) {
-    error("Error getting item groups. Translation unit size: " + std::to_string(translationUnit.size()) + "\nTranslation Unit First Item: " + translationUnit.at(0).name, "Report compiler error.");
-  }
-
   std::vector<util::int2d> output(1);
-  int iCurItem = 1;
-
-  do {
-        output.back().y = iCurItem;
-        if(util::contains(translationUnit.at(iCurItem).append,',')) {
-          if(util::contains(translationUnit.at(iCurItem).append,'"')) {
-            // TODO: handle
-            error("Compiler unhandled in current version.","Comma inside quotation mark.");
-          } else {
-            iCurItem++;
-            if(iCurItem < translationUnit.size()) {
-              output.push_back(util::int2d(iCurItem,iCurItem));
-            }
-            continue;
+  if(translationUnit.size() > 1) {
+    int iCurItem = 1;
+    do {
+      output.back().y = iCurItem;
+      if(util::contains(translationUnit.at(iCurItem).append,',')) {
+        if(util::contains(translationUnit.at(iCurItem).append,'"')) {
+          // TODO: handle
+          error("Compiler unhandled in current version.","Comma inside quotation mark.");
+        } else {
+          iCurItem++;
+          if(iCurItem < translationUnit.size()) {
+            output.push_back(util::int2d(iCurItem,iCurItem));
           }
+          continue;
         }
+      }
 
-        iCurItem++;
-      } while (iCurItem < translationUnit.size());
+      iCurItem++;
+    } while (iCurItem < translationUnit.size());
+
+
+}
 
   workStack.pop();
   return output;
@@ -239,6 +250,7 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
     }
   }
   // NOTE: handle all unique items here / probably need seperate functions for each
+  // CUSTOM UNIQUE HANDLES
   if(uIns.firstItem.type == itemType::UNI) {
     std::string sName = uIns.firstItem.name;
 
@@ -308,7 +320,7 @@ std::vector<std::string> basm::translateMultiUnit(std::vector<std::string> vLine
   workStack.push("Translating Multi Unit '" + vLines.front() + "'");
 
   std::vector<std::string> vOutput, vTemp;
-  std::vector<basm::itemInfo> curUnit;
+  std::vector<basm::itemInfo> curUnit, firstUnit, tempUnit;
 
   for(auto& line : vLines) {
     curUnit.clear();
@@ -316,8 +328,16 @@ std::vector<std::string> basm::translateMultiUnit(std::vector<std::string> vLine
     for(auto& item : splitLineToItems(line)) {
       curUnit.push_back(getItemInfo(item));
     }
-    vTemp = translateUnit(curUnit);
-    util::appendVectors(vOutput, vTemp);
+    if(firstUnit.empty()) {
+      firstUnit = curUnit;
+    } else {
+      for(int i = 1; i < firstUnit.size() - 1; i++) {
+        tempUnit.push_back(firstUnit.at(i));
+      }
+      util::appendVectors(tempUnit, curUnit);
+      vTemp = translateUnit(tempUnit);
+      util::appendVectors(vOutput, vTemp);
+    }
   }
 
   workStack.pop();
@@ -610,7 +630,7 @@ void basm::defineFunctionContents(basm::brick& currentBrick) {
 
     vSplitLine = splitLineToItems(line);
 
-    if(vSplitLine.at(vSplitLine.size() - 1) == "{") {
+    if(vSplitLine.back() == "{") {
       vMultiLine.push_back(line);
       continue;
     }
@@ -707,6 +727,8 @@ void basm::defineBrick(basm::brick& currentBrick) {
       currentBrick.vContents.push_back("return");
     }
     defineFunctionContents(currentBrick);
+  } else {
+    error("Define brick not caught. Brick name: " + currentBrick.sName, "Report error.");
   }
 
   currentDefines.erase(currentBrick.sName);
@@ -763,7 +785,7 @@ void basm::loadTranslations() {
   std::string sName;
 
   Log->v("Attempting to open SQLite DB file...");
-  int openDB = sqlite3_open(util::switchOnAlt("BullScript_CPP_Compiler/Basm/basmTranslation.db", "Basm/basmTranslation.db"), &db);
+  int openDB = sqlite3_open(util::switchOnAlt("BullScript_CPP_Compiler/Basm/basmTranslation.db", "Basm/basmTranslation.db").c_str(), &db);
   if(openDB != SQLITE_OK) {
     std::string err = sqlite3_errmsg(db);
     sqlite3_close(db);

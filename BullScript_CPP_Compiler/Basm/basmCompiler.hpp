@@ -142,7 +142,10 @@ private:
 		// program will only build with the values/functions that are actually used
 		// NOTE: this will call define on any bricks or sub-bricks put thru this
 		// for the main program should only need to call this on "entry"
-		branchOutFromBrick(brick& branchBrick);
+		branchOutFromBrick(brick& branchBrick),
+
+		// branches out from all functions with "required"
+		defineRequired();
 
 	static std::vector<std::string>
 		splitLineToItems(std::string& sLineToSplit),
