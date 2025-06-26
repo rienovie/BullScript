@@ -21,6 +21,7 @@ std::vector<std::string> basm::vSection_data;
 std::vector<std::string> basm::vSection_bss;
 std::vector<std::string> basm::vSection_rodata;
 std::vector<std::string> basm::vSection_text;
+std::vector<std::string> basm::vLastConditional;
 
 std::stack<std::string> basm::workStack;
 
@@ -270,6 +271,10 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
       output.push_back(sBuild);
       existingLabels.emplace(sBuild);
 
+    } else if(sName == "condition") {
+      if(vLastConditional.empty()) {
+        error("Conditional statement not found when translating unit " + uIns.firstItem.name, "Verify function contains condition attribute.");
+      }
     } else {
       error("Attempted to translate undefined unique '" + sName + "'", "Verify spelling or define new.");
     }
@@ -361,7 +366,9 @@ basm::itemInfo basm::getItemInfo(std::string sItem) {
     return output;
   }
 
-  // maybe can merge this into a single for loop but meh for now
+  // TODO: merge this into a single for loop for the prepend and append
+  // this is interating through item until a alphanumeric character is found
+  // this makes the item just the alphanumeric characters
   int iCounter = 0;
   for(; !(util::charFilter(sItem[iCounter],"\"$#()",true,true)); iCounter++) {
     output.prepend.push_back(sItem[iCounter]);
@@ -721,7 +728,7 @@ void basm::defineBrick(basm::brick& currentBrick) {
       defineFunctionContents(currentBrick);
     }
   } else if(currentBrick.sKeyword == "fn") {
-    Log->v(currentBrick.sName, " is a function.");
+    Log->v(currentBrick.sName, "is a function.");
     if(!util::contains(currentBrick.vContents,std::string("return")) && currentBrick.sName != "entry" && currentBrick.sName != "exit") {
       Log->w(currentBrick.sName, " does not contain a return. Adding one because functions must return. This might cause issues.");
       currentBrick.vContents.push_back("return");

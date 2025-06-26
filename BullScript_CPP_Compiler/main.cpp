@@ -34,8 +34,13 @@ int main(int argc, char *argv[]) {
             vArgs.clear();
             vArgs.push_back(util::argvToString(argv[0]));
 
-            vArgs.push_back(util::switchOnAlt("BullScript_CPP_Compiler/Basm/test.basm", "Basm/test.basm"));
-            // vArgs.push_back("BullScript_CPP_Compiler/Basm/test.basm");
+            // vArgs.push_back(util::switchOnAlt("BullScript_CPP_Compiler/Basm/test.basm", "../BullScript_CPP_Compiler/Basm/test.basm"));
+            // HACK: hard coded path to test.basm but TODO: will change later
+            if(std::filesystem::exists("/home/vince")) {
+                vArgs.push_back("/home/vince/Repos/BullScript/BullScript_CPP_Compiler/Basm/test.basm");
+            } else {
+                
+            }
             // TODO: handle third arg
         } else {
 	        std::string sFullCommand = "";

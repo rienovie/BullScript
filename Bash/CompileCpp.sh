@@ -5,6 +5,11 @@
 
 echo "Bull CPP Compile"
 
+if [ ! -d "BullScript_CPP_Compiler" ]; then
+	echo "Change directory to project root before running this script."
+	exit 1
+fi
+
 utilSubMod=$(pwd)/BullScript_CPP_Compiler/Util/util.cpp
 
 if [ ! -f "$utilSubMod" ]; then

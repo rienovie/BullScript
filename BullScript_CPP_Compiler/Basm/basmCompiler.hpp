@@ -81,7 +81,6 @@ public:
 		{};
 	};
 
-
 	static std::map<std::string,brick> mBricks;
 	static std::map<std::string,asmTranslation> mTranslations;
 	static std::map<std::string,asmValue> mValues;
@@ -98,6 +97,9 @@ public:
 	static std::vector<std::string> vSection_bss;
 	static std::vector<std::string> vSection_rodata;
 	static std::vector<std::string> vSection_text;
+
+	// NOTE: should store the last translated conditional, functions must include conditional as an attribute inorder to translate
+	static std::vector<std::string> vLastConditional;
 	
 	static std::stack<std::string> workStack;
 

@@ -8,3 +8,5 @@ logs/*
 logs
 *.kdev4
 main
+build
+.vscode

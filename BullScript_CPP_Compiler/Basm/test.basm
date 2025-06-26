@@ -157,7 +157,7 @@ define if : inline, condition {
 ; a condition statement must be surrounded with parenthesis
 ; example of conditional statement is below
 ; "&&" "||" with multiple comparisions will probably only be in BullScript not basm
-; TODO: look into if multiconditions would work in basm
+; TODO: look into if multiconditionals would work in basm
 ; comparsions are:
 ;   == , != , < , > , <= , >=
 
