@@ -140,6 +140,7 @@ private:
 
 		// self explanitory I think :)
 		printAllBricks(),
+		printUnit(std::vector<itemInfo>& unitToPrint),
 
 		// program will only build with the values/functions that are actually used
 		// NOTE: this will call define on any bricks or sub-bricks put thru this
@@ -155,6 +156,7 @@ private:
 		translateUnit(std::vector<itemInfo> unitToTranslate);
 	static std::string
 		getFnName(std::string sBrickName),
+		unitToString(std::vector<itemInfo>& unitToPrint),
 		resolveItem(std::vector<std::string>& outputRef,itemInfo itemToResolve),
 		resolveSubItems(std::vector<std::string>& outputRef,std::vector<itemInfo>& subItems);
 	static itemInfo getItemInfo(std::string sItem);

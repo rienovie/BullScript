@@ -215,6 +215,11 @@ aCoolThing print {
 	return
 }
 
+fn crash {
+	print input
+	syscall $exit, 1
+}
+
 ; It'll be standard practice to use a "entry" & "exit" at the bottom of a file like this
 ; Both functions will be required
 ; These are the only two functions that don't have returns

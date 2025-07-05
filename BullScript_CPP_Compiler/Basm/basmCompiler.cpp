@@ -131,15 +131,14 @@ std::string basm::resolveSubItems(std::vector<std::string>& outputRef,std::vecto
     return resolveItem(outputRef, subItems.at(0));
   }
   workStack.push("Resolving sub items with " + std::to_string(subItems.size()) + " items");
+  Log->v("Resolving sub items with " + std::to_string(subItems.size()) + " items");
 
-  std::string sOutput;
+  std::string sOutput = "";
 
-  auto temp = translateUnit(subItems);
-  util::appendVectors(outputRef, temp);
-
-  // NOTE: pretty sure the translations would have the value in the output
-  // TODO: should check
-  sOutput = mTranslations.at("output").x86_64;
+  for(auto& i : subItems) {
+    Log->v("Sub item: " + i.name);
+    sOutput.append(resolveItem(outputRef, i) + " ");
+  }
 
   workStack.pop();
   return sOutput;
@@ -229,18 +228,34 @@ std::vector<util::int2d> basm::getItemGroups(std::vector<basm::itemInfo>& transl
   return output;
 }
 
+void basm::printUnit(std::vector<itemInfo>& unitToPrint) {
+  util::qPrint("Printing unit:");
+  for(auto& i : unitToPrint) {
+    Log->v(i.name);
+  }
+}
+
+std::string basm::unitToString(std::vector<itemInfo>& unitToPrint) {
+  std::string sOutput = "";
+  for(auto& i : unitToPrint) {
+    sOutput = sOutput + i.name + " ";
+  }
+  return sOutput;
+}
+
 std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToTranslate) {
   auto uIns = unitInstructions(unitToTranslate);
   if(uIns.firstItem.name.empty()) {
     return std::vector<std::string>();
   }
 
-  workStack.push("Translating unit " + uIns.firstItem.name);
+  workStack.push("Translating unit: " + unitToString(unitToTranslate));
+  printUnit(unitToTranslate);
 
   std::vector<std::string> output;
   std::string sBuild = "";
 
-  Log->v("Translating unit '" + uIns.firstItem.name + "'");
+  Log->v("Translating unit '" + uIns.firstItem.name + "'"); // TODO: change to entire unit
 
   if(uIns.bFunction) {
     if(!util::contains(verifiedDefined,uIns.firstItem.name)) {
@@ -286,15 +301,11 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
       error("Too many arguments given to Unit " + uIns.firstItem.name, "Current Max of 1 argument");
     }
 
-    // BUG: this does not work, currently just focusing on getting the entire process done
-    // TODO: will fix later
     std::vector<basm::itemInfo> curUnit;
     while (groups.size() > 0) {
       curUnit.clear();
 
-      curUnit = std::vector<basm::itemInfo>(
-        unitToTranslate.begin() + groups.back().x,
-        unitToTranslate.begin() + groups.back().y);
+      curUnit = util::subVector(unitToTranslate, groups.back().x, groups.back().y);
 
       if(groups.size() == 2) {
         sBuild = ", ";
@@ -307,7 +318,6 @@ std::vector<std::string> basm::translateUnit(std::vector<basm::itemInfo> unitToT
       } else {
         sBuild = resolveItem(output,unitToTranslate.at(groups.back().x)) + sBuild;
       }
-
 
       groups.pop_back();
     }
@@ -330,6 +340,7 @@ std::vector<std::string> basm::translateMultiUnit(std::vector<std::string> vLine
   for(auto& line : vLines) {
     curUnit.clear();
     vTemp.clear();
+    tempUnit.clear();
     for(auto& item : splitLineToItems(line)) {
       curUnit.push_back(getItemInfo(item));
     }
@@ -577,7 +588,7 @@ std::vector<std::string> basm::splitLineToItems(std::string& sLineToSplit){
       } else if(curChar == '"') {
         bInsideQuote = true;
       } else if(curChar == '(') {
-        bInsideQuote = true;
+        bInsideParen = true;
       } else if(curChar == ' ') {
         if(sBuild.length() < 1) {
           continue;
@@ -585,20 +596,17 @@ std::vector<std::string> basm::splitLineToItems(std::string& sLineToSplit){
         vOutput.push_back(sBuild);
         sBuild.clear();
         continue;
+      } else {
+        sBuild.push_back(curChar);
       }
-
-      sBuild.push_back(curChar);
-
     }
 
     if(sBuild.length() > 0) {
       vOutput.push_back(sBuild);
     }
 
-
   workStack.pop();
   return vOutput;
-
 }
 
 void basm::defineFunctionContents(basm::brick& currentBrick) {
@@ -734,6 +742,9 @@ void basm::defineBrick(basm::brick& currentBrick) {
       currentBrick.vContents.push_back("return");
     }
     defineFunctionContents(currentBrick);
+  } else if (mBricks.contains(currentBrick.sKeyword)) {
+    Log->v(currentBrick.sName, "is a brick.");
+    defineBrick(mBricks.at(currentBrick.sKeyword));
   } else {
     error("Define brick not caught. Brick name: " + currentBrick.sName, "Report error.");
   }
@@ -1074,8 +1085,16 @@ void basm::buildBrick(std::string sBrickName, std::string sBrickRawContents, boo
           case 2: // Value
             if(bInsideQuotes) {
               sBuild.push_back(currentChar);
+              // Check for escaped quotes and newlines
               if(currentChar == '"' && sBrickRawContents[i-1] != '\\') {
                 bInsideQuotes = false;
+              } else if(currentChar == '\\' && i + 1 < sBrickRawContents.length()) {
+                // Handle escape sequences within quotes
+                char nextChar = sBrickRawContents[i + 1];
+                if(nextChar == 'n' || nextChar == 't' || nextChar == 'r' || nextChar == '\\' || nextChar == '"') {
+                  sBuild.push_back(nextChar);
+                  i++; // Skip the next character since we've already handled it
+                }
               }
             } else if(currentChar == ' ' || currentChar == ',') {
               if(sBuild.length() > 0) {
