@@ -43,12 +43,12 @@ int main(int argc, char *argv[]) {
             }
             // TODO: handle third arg
         } else {
-	        std::string sFullCommand = "";
-	        for(int i = 0; i < argc; i++) {
-	            sFullCommand.append(argv[i]);
-	            sFullCommand.push_back(' ');
-	        }
-	        Log->e("Must specify source and output.\n\nbull_cpp {source} {output}\n\nCommand given:\n",sFullCommand,"\n");
+            std::string sFullCommand = "";
+            for(int i = 0; i < argc; i++) {
+                sFullCommand.append(argv[i]);
+                sFullCommand.push_back(' ');
+            }
+            Log->e("Must specify source and output.\n\nbull_cpp {source} {output}\n\nCommand given:\n",sFullCommand,"\n");
         }
     }
     if(argc < 3) {

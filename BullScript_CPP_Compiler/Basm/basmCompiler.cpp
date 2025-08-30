@@ -26,39 +26,30 @@ std::vector<std::string> basm::vLastConditional;
 std::stack<std::string> basm::workStack;
 
 void basm::compileFromFile(std::string sFile) {
-  try {
-    workStack.push("Compiling from file " + sFile);
-    if(Log->Options.bPrint != false) {
-      util::qPrint("Compiling from file " + sFile);
-    }
-
-    loadTranslations();
-    printTranslations();
-
-    buildBricksFromFile(sFile);
-    verifyEntryAndExitBricks();
-
-    Log->n("Defining Required...");
-    defineRequired();
-    Log->n("Requires completed.");
-
-    Log->n("Starting branch out from entry function...");
-    branchOutFromBrick(mBricks["entry"]);
-    Log->n("Branch out completed.");
-
-    workStack.pop();
-    if(Log->Options.bPrint == false) {
-      util::qPrint("Basm compile complete.");
-    }
-
-  } catch (...) {
-    Log->e("Compile error. Printing work stack:");
-    while (!workStack.empty()) {
-      Log->w(workStack.top());
-      workStack.pop();
-    }
-    throw nullptr;
+  workStack.push("Compiling from file " + sFile);
+  if(Log->Options.bPrint != false) {
+    util::qPrint("Compiling from file " + sFile);
   }
+
+  loadTranslations();
+  printTranslations();
+
+  buildBricksFromFile(sFile);
+  verifyEntryAndExitBricks();
+
+  Log->n("Defining Required...");
+  defineRequired();
+  Log->n("Requires completed.");
+
+  Log->n("Starting branch out from entry function...");
+  branchOutFromBrick(mBricks["entry"]);
+  Log->n("Branch out completed.");
+
+  workStack.pop();
+  if(Log->Options.bPrint == false) {
+    util::qPrint("Basm compile complete.");
+  }
+
 }
 
 void basm::defineRequired() {
@@ -1242,7 +1233,7 @@ void basm::sanitizeRawBrickData(std::string &sBrickName, std::string &sBrickRawC
 
 // TODO: handle errors with a try catch and workStack print
 void basm::error(std::string sMessage, std::string sSolution) {
-  Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n\n");
+  Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n");
 
   Log->v("Printing values:");
 
@@ -1280,7 +1271,16 @@ void basm::error(std::string sMessage, std::string sSolution) {
     Log->v("LABEL: " + i);
   }
 
-  Log->v("End of Values.\n\n");
+  Log->v("End of Values.\n");
+
+  Log->v("Printing work stack:");
+  while (!workStack.empty()) {
+    Log->w(workStack.top());
+    workStack.pop();
+  }
+  Log->v("End of work stack.\n");
+
+  Log->e("Basm Error!\n",sMessage,"\nPossible solution:\n",sSolution,"\n");
 
   throw nullptr;
 }
