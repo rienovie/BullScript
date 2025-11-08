@@ -1,4 +1,5 @@
 BullScript Brain Storming
+(Out of date as of 10/25/25)
 
 I want to create a language that is both squishy and firm.
 I want it to be simple to learn in, butbecomes more useful the more you know.
