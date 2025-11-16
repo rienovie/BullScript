@@ -32,6 +32,7 @@ Some of the ideas I have are:
     -With these two keywords, all you have to do to make everything possible is to make "attributes"
     -Attributes are the way you would specify 8b, 16b, 32b, const, inline, args, etc
 
+Note: Not final until test.basm is functional
 A basic BASM program would look like:
 
     ; this is a comment
@@ -42,50 +43,80 @@ A basic BASM program would look like:
     create aValue : 8b, const = 5
     create aString : 8b = "Hello World!\n" ;should have built-in support for escape codes
 
-    define print <- 1 : required {
     ; "required" means the function will be included even if not used
-        ; "<-" says how many args the function takes
-        ; if not specified, it'll be assumed to be 0
-        ; will compile error if not enough args given
-
-        ; reg0-reg7 are the registers used for system calls
-        ; will probably have other names for the registers as well
-        ; multiple names can be used for the same register for readability depending on context
-        ; this might change but I'll see if issues arise as the language develops
-        ; regSys or reg0
-        move regSys, $write
-        move reg1, #stdout
-        ; $ is for syscall values and # is for predetermined values
-        ; this make it easier to read
-
-        ; input1-input{x} are the arguments given to the function
-        ; input0 I feel like should be something but I'm not sure what yet
-        move reg2, input1
-        move reg3, length input1
-        ; length is a built-in function that returns a length of something looking for the first null terminated byte
-        ; args are speperated by commas
-
-        return; return cannot have values but there is "output" which is a register
-    }
-
-    define exit <- 0 : required, inline {
-        move regSys, $exit
+    ; "inline" means the function will be copied into the location it is called instead of being called
+    define exit : required, inline {
+        ; registers are reg0-reg15, with reg0 being the syscall register and reg1-reg5 being the syscall arguments
+        move reg0, $exit ; $ is for syscall values
         move reg1, 0
-        call ; call is "syscall" instruction
-        ; you don't need "call" for functions because they are assumed called if they are used
+        call ; call is "syscall" instruction also known as "interrupt"
     }
 
-    define crash <- regB : inline {
-        move regSys, $exit
-        move reg1, regB
+    ; "<-" is used to specify arguments
+    ; '?' means the argument is optional
+    ; the argument that is given when calling the function gets put into the register before the function is called
+    define sysCall <- reg0, reg1?, reg2?, reg3?, reg4?, reg5? : required , inline {
         call
     }
 
+    ; "output" is a specific register that is used for the return value
+    ; the function will inline the output register into the location it is called
+    ; functions that have output cannot be used as instructions
+    define length <- reg0 : output {
+        move output, reg0
+        while (byte [output] != 0) {
+            increment output
+        }
+        subtract output, reg0
+        return; return must be called for non-inline functions
+    }
+
+    define while <- condition, contents : required, inline {
+        label whileJump
+        if condition {
+            contents
+            jump whileJump
+        }
+    }
+
+    define print <- reg2 {
+        sysCall $write, #stdout, reg2, (length reg2)
+        ; # is for predetermined values
+        ; () resolves sub-expressions with a return value
+
+        return
+    }
+
+    define crash <- reg2 : inline {
+        ; Starting the line with "multi" means it'll apply the instruction to each line of the container's contents
+        ; Below this is equivallent to:
+        ; move reg0, $exit
+        ; move reg1, reg2
+        multi move {
+            reg0, $exit
+            reg1, reg2
+        }
+        call
+    }
+
+    ; "condition" must be inside of parenthesis ie (reg0 > reg1)
+    ; "contents" is the keyword to describe {}
+    define if <- condition, contents : required, inline {
+        ; "condition" is evaluated here
+        jumpFalse ifEnd
+        contents
+        label ifEnd
+    }
+
+
     ; "entry" is the function that is called when the program starts
-    define entry <- 0 : required {
-        print aValue ; print should be able to handle values and strings but not sure if what I have typed here works for that, I'll have to try when language is functional
-        print aString
-        print "Hello\n"
+    ; the program will fail to compile if "entry" or "exit" are not defined
+    define entry {
+        multi print {
+            aValue ; print should be able to handle values and strings
+            aString
+            "Hello\n"
+        }
         exit
     }
 

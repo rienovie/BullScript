@@ -1,0 +1,84 @@
+; this is a comment
+; newlines are the default delimiter
+; line will end at semicolons
+; multiple lines need the last char to be {
+
+create aValue : 8b, const = 5
+create aString : 8b = "Hello World!\n" ;should have built-in support for escape codes
+
+; "required" means the function will be included even if not used
+; "inline" means the function will be copied into the location it is called instead of being called
+define exit : required, inline {
+    ; registers are reg0-reg15, with reg0 being the syscall register and reg1-reg5 being the syscall arguments
+    move reg0, $exit ; $ is for syscall values
+    move reg1, 0
+    call ; call is "syscall" instruction also known as "interrupt"
+}
+
+; "<-" is used to specify arguments
+; '?' means the argument is optional
+; the argument that is given when calling the function gets put into the register before the function is called
+define sysCall <- reg0, reg1?, reg2?, reg3?, reg4?, reg5? : required , inline {
+    call
+}
+
+; "output" is a specific register that is used for the return value
+; the function will inline the output register into the location it is called
+; functions that have output cannot be used as instructions
+define length <- reg0 : output {
+    move output, reg0
+    while (byte [output] != 0) {
+        increment output
+    }
+    subtract output, reg0
+    return; return must be called for non-inline functions
+}
+
+define while <- condition, contents : required, inline {
+    label whileJump
+    if condition {
+        contents
+        jump whileJump
+    }
+}
+
+define print <- reg2 {
+    sysCall $write, #stdout, reg2, (length reg2)
+    ; # is for predetermined values
+    ; () resolves sub-expressions with a return value
+    return
+}
+
+define crash <- reg2 : inline {
+    ; Starting the line with "multi" means it'll apply the instruction to each line of the container's contents
+    ; Below this is equivallent to:
+    ; move reg0, $exit
+    ; move reg1, reg2
+    multi move {
+        reg0, $exit
+        reg1, reg2
+    }
+    call
+}
+
+; "condition" must be inside of parenthesis ie (reg0 > reg1)
+; "contents" is the keyword to describe {}
+define if <- condition, contents : required, inline {
+    ; "condition" is evaluated here
+    jumpFalse ifEnd
+    contents
+    label ifEnd
+}
+
+
+; "entry" is the function that is called when the program starts
+; the program will fail to compile if "entry" or "exit" are not defined
+define entry {
+    multi print {
+        aValue ; print should be able to handle values and strings
+        aString
+        "Hello\n"
+    }
+    exit
+}
+
