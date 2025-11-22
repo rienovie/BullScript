@@ -1,12 +1,14 @@
 Bull Stack Brain Storming
 
-BullScript (Scripting Language)
+BullScript (Scripting Language) -> file.bs
     \/
-Bull / Bull Lang (Compiled Language / Runtime / Compiler)
+Bull (Runtime & Compiler) / Bull Lang (Compiled Language) -> file.bl | file.bull | file.bx (feel like this should be build instructions)
     \/
-BASM (Bull Assembly)
+BASM (Bull Assembly) -> file.basm
     \/
-NASM (NASM)
+NASM (NASM) -> file.nasm
+    \/
+Executable
 
 Let's build this from the bottom up.
 
@@ -24,15 +26,16 @@ Some of the ideas I have are:
         -This is a 1:1 mapping to your brain's idea of what the instruction is
         -mov -> move
         -sub -> subtract
-        -int -> interrupt
+        -int -> interrupt (probably won't use)
         -jmp -> jump
-    -When writing asm, you are either "creating" a value or "calling" a method
+    -When writing asm, you are either "creating" a value or "calling" a method/instruction
         -"create" for variables
-        -"define" for methods
+        -"define" for methods/instructions
     -With these two keywords, all you have to do to make everything possible is to make "attributes"
-    -Attributes are the way you would specify 8b, 16b, 32b, const, inline, args, etc
+    -Attributes are the way you would specify 8b, 16b, 32b, const, inline, args, output, etc
 
-Note: Not final until test.basm is functional
+Note: Not final until new.basm is functional
+new.basm is the current version and if there's a conflict with what's in this document, new.basm is the one to be used
 A basic BASM program would look like:
 
     ; this is a comment
@@ -52,26 +55,31 @@ A basic BASM program would look like:
         call ; call is "syscall" instruction also known as "interrupt"
     }
 
-    ; "<-" is used to specify arguments
+    ; "()" is used to specify arguments
     ; '?' means the argument is optional
     ; the argument that is given when calling the function gets put into the register before the function is called
-    define sysCall <- reg0, reg1?, reg2?, reg3?, reg4?, reg5? : required , inline {
+    define sysCall (reg0, reg1?, reg2?, reg3?, reg4?, reg5?) : required , inline {
         call
     }
 
-    ; "output" is a specific register that is used for the return value
+    ; when calling a method/instruction you can either use
+    ; the "instruction" style:
+    ; afunction reg1, reg0
+    ; or the "method" style:
+    ; move reg0, aFunction(reg1, reg0)
+
     ; the function will inline the output register into the location it is called
-    ; functions that have output cannot be used as instructions
-    define length <- reg0 : output {
-        move output, reg0
-        while (byte [output] != 0) {
-            increment output
+    ; functions that have output cannot be used in the "instruction" style
+    define length(reg0) : reg1 {
+        move reg1, reg0
+        while (byte [reg1] != 0) {
+            increment reg1
         }
-        subtract output, reg0
+        subtract reg1, reg0
         return; return must be called for non-inline functions
     }
 
-    define while <- condition, contents : required, inline {
+    define while(condition, contents) : required, inline {
         label whileJump
         if condition {
             contents
@@ -79,7 +87,7 @@ A basic BASM program would look like:
         }
     }
 
-    define print <- reg2 {
+    define print(reg2) {
         sysCall $write, #stdout, reg2, (length reg2)
         ; # is for predetermined values
         ; () resolves sub-expressions with a return value
@@ -87,7 +95,7 @@ A basic BASM program would look like:
         return
     }
 
-    define crash <- reg2 : inline {
+    define crash(reg2) : inline {
         ; Starting the line with "multi" means it'll apply the instruction to each line of the container's contents
         ; Below this is equivallent to:
         ; move reg0, $exit
@@ -101,7 +109,7 @@ A basic BASM program would look like:
 
     ; "condition" must be inside of parenthesis ie (reg0 > reg1)
     ; "contents" is the keyword to describe {}
-    define if <- condition, contents : required, inline {
+    define if(condition, contents) : required, inline {
         ; "condition" is evaluated here
         jumpFalse ifEnd
         contents
@@ -120,5 +128,23 @@ A basic BASM program would look like:
         exit
     }
 
+The entire language will be built on top of BASM and Bull/BullLang will compile to BASM.
+My preference is for most of the features of the language to be built in the language itself and not hardcoded into the compiler.
+For example, the "if" statement is built as an inline function in BASM instead of as a keyword.
 
+I want BullLang to be similar to C, but with a few alterations that'll make it better to write for with large groups of people.
+The main ideas I have are:
+    -Have "enforce" and "warn" as precompile options/functions
+    -All values are references by default and only copied when specified with a character (ie: #,$,@,not sure what to use yet)
+    -Can "append" functions and values to types defined in other files
+    -Can "inherit" specific functions/values from other types (ie: inherit {int.public, int.add} ) not sure the syntax yet
+    -Can "replace" functions/values already defined
 
+I will work out the example syntax after I've implemented BASM.
+
+And on top of Bull (compiler/runtime) I want to make a fast scripting language similar to Bash/Python/JavaScript but typesafe and syntax identical to BullLang.
+Writing BullScript should be fast, flexible, and be a good replacement for general purpose scripting.
+The main difference bewteen BullScript and BullLang is "enforce", "warn", "replace" and other compile only features.
+You should be able to compile a BullScript file into an executable, but it should be able to be run without compilation
+
+So far, this is the general theory I'm working with, and I'll update this after I've made progress.

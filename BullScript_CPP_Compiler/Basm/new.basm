@@ -15,41 +15,45 @@ define exit : required, inline {
     call ; call is "syscall" instruction also known as "interrupt"
 }
 
-; "<-" is used to specify arguments
+; "()" is used to specify arguments
 ; '?' means the argument is optional
 ; the argument that is given when calling the function gets put into the register before the function is called
-define sysCall <- reg0, reg1?, reg2?, reg3?, reg4?, reg5? : required , inline {
+define sysCall(reg0, reg1?, reg2?, reg3?, reg4?, reg5?) : required , inline {
     call
 }
 
-; "output" is a specific register that is used for the return value
-; the function will inline the output register into the location it is called
-; functions that have output cannot be used as instructions
-define length <- reg0 : output {
-    move output, reg0
-    while (byte [output] != 0) {
-        increment output
+; if a register is specified as an attribute, it will inline the register into the location it is called
+; functions that specify a return register cannot be used as instructions (ie: first line item)
+define length(reg0) : reg1 {
+    move reg1, reg0
+    while (byte [reg1] != 0) {
+        increment reg1
     }
-    subtract output, reg0
+    subtract reg1, reg0
     return; return must be called for non-inline functions
 }
 
-define while <- condition, contents : required, inline {
+define while(condition, contents) : required, inline {
+    ; labels inside an inline function will become unique each time the function is called
+    ; will become something like:
+    ; label whileJump_0
+    ; label whileJump_1
+    ; ...
     label whileJump
     if condition {
         contents
+	; jumps must be scoped to a function so should give compiler error if attempted jump outside of function
         jump whileJump
     }
 }
 
-define print <- reg2 {
-    sysCall $write, #stdout, reg2, (length reg2)
+define print(reg2) {
+    sysCall $write, #stdout, reg2, length(reg2)
     ; # is for predetermined values
-    ; () resolves sub-expressions with a return value
     return
 }
 
-define crash <- reg2 : inline {
+define crash(reg2) : inline {
     ; Starting the line with "multi" means it'll apply the instruction to each line of the container's contents
     ; Below this is equivallent to:
     ; move reg0, $exit
@@ -61,10 +65,10 @@ define crash <- reg2 : inline {
     call
 }
 
-; "condition" must be inside of parenthesis ie (reg0 > reg1)
 ; "contents" is the keyword to describe {}
-define if <- condition, contents : required, inline {
-    ; "condition" is evaluated here
+define if(condition, contents) : required, inline {
+    ; "evaluate" translates conditional expressions into comparison expressions
+    evaluate condition
     jumpFalse ifEnd
     contents
     label ifEnd

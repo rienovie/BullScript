@@ -48,7 +48,7 @@ syn keyword basmDefKeyword create define
 " Instruction keywords
 " -------------------------------------------------------
 syn keyword basmKeyword
-      \ return call label jump jumpFalse
+      \ return call label jump jumpFalse evaluate
       \ move increment subtract multi while if entry
 
 " -------------------------------------------------------

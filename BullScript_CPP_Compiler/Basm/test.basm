@@ -1,3 +1,10 @@
+
+; This is outdated, new.basm is the current version
+
+
+
+
+
 ; Basm get's translated directly into ASM (Nasm)
 ; BullScript will be written ontop of Basm
 ; BullScript syntax will be less picky than Basm is because more care should be used when writing it
