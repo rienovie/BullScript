@@ -41,3 +41,21 @@ bool logClass::compareFileNames(std::string sCurrent, std::string sNew) {
     return std::lexicographical_compare(sNew.begin(),sNew.end(),sCurrent.begin(),sCurrent.end());
 }
 
+void logClass::workStackPush(std::string sID, std::string sMessage) {
+    Log->v("Work stack pushed item with ID:",sID, "and message:\n",sMessage);
+    workStack.push(std::make_pair(sID,sMessage));
+}
+
+void logClass::workStackPop(std::string sID) {
+    if(workStack.empty()) {
+        Log->e("Work stack empty when attempting to pop item with ID:",sID);
+        return;
+    }
+    if(workStack.top().first != sID) {
+        Log->e("Attempted to pop item with ID:",sID,"but top item has ID:",workStack.top().first);
+        return;
+    }
+    Log->v("Work stack popped item with ID:",sID);
+    workStack.pop();
+}
+

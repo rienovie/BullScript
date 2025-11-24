@@ -3,6 +3,7 @@
 #include "Util/util.hpp"
 #include <filesystem>
 #include <fstream>
+#include <stack>
 
 struct logOptsStruct {
 	bool
@@ -18,6 +19,7 @@ public:
 
 	static logOptsStruct Options;
 	static bool bInitialized;
+	static std::stack<std::pair<std::string,std::string>> workStack;
 
 	logClass() {
 		sOutputFile = util::getCurrentDateTime();
@@ -32,15 +34,23 @@ public:
 	
 	void initialize();
 
+	// NOTE: uses ID to verify pop is for the correct work item
+	void workStackPush(std::string sID, std::string sMessage);
+	void workStackPop(std::string sID);
+
+	static bool isInitialized() {
+		if(!bInitialized) {
+			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
+		}
+		return bInitialized;
+	}
+
 
 	// Log Type "Normal"
 	// Will always log
 	template <typename... Args>
 	static void n(Args... inputArgs) {
-		if(!bInitialized) {
-			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
-			return;
-		}
+		if(!isInitialized()) { return; }
 		if(Options.bPrint) { util::cPrint("cyan","-",inputArgs...); }
 		writeToFile("N:",inputArgs...);
 	}
@@ -49,10 +59,7 @@ public:
 	// Will only log with verbose option
 	template <typename... Args>
 	static void v(Args... inputArgs) {
-		if(!bInitialized) {
-			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
-			return;
-		}
+		if(!isInitialized()) { return; }
 		if(!Options.bVerbose) { return; }
 		if(Options.bPrint) { util::qPrint("-",inputArgs...); }
 		writeToFile("V:",inputArgs...);
@@ -63,10 +70,7 @@ public:
 	// Will always print
 	template <typename... Args>
 	static void w(Args... inputArgs) {
-		if(!bInitialized) {
-			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
-			return;
-		}
+		if(!isInitialized()) { return; }
 		util::cPrint("yellow","-",inputArgs...);
 		writeToFile("W:",inputArgs...);
 	}
@@ -77,10 +81,7 @@ public:
 	// Will always print
 	template <typename... Args>
 	static void e(Args... inputArgs) {
-		if(!bInitialized) {
-			util::cPrint("red","Log not initialized! Please run 'initialize' function before attempting to log.");;
-			return;
-		}
+		if(!isInitialized()) { return; }
 		util::cPrint("red","-",inputArgs...);
 		writeToFile("E:",inputArgs...);
 		if(Options.bThrowOnError) {
