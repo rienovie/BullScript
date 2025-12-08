@@ -1,3 +1,4 @@
+# Out of date
 # Current rough idea of stuff to focus on
 
 # Basm compile

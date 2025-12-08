@@ -1,10 +1,13 @@
 #include "main.hpp"
-#include "Util/util.hpp"
+
 #include <filesystem>
 #include <memory>
 #include <string>
-#include "Basm/basmCompiler.hpp"
+
+#include "Util/util.hpp"
+// #include "Basm/basmCompiler.hpp"
 #include "logger.hpp"
+#include "Basm/newBasm.hpp"
 
 int main(int argc, char *argv[]) {
     // util::alt.setAlt(true);
@@ -34,10 +37,10 @@ int main(int argc, char *argv[]) {
             vArgs.clear();
             vArgs.push_back(util::argvToString(argv[0]));
 
-            // vArgs.push_back(util::switchOnAlt("BullScript_CPP_Compiler/Basm/test.basm", "../BullScript_CPP_Compiler/Basm/test.basm"));
-            // HACK: hard coded path to test.basm but TODO: will change later
+            // vArgs.push_back(util::switchOnAlt("BullScript_CPP_Compiler/Basm/test.basm", "../BullScript_CPP_Compiler/Basm/new.basm"));
+            // HACK: hard coded path to new.basm but will change later
             if(std::filesystem::exists("/home/vince")) {
-                vArgs.push_back("/home/vince/Repos/BullScript/BullScript_CPP_Compiler/Basm/test.basm");
+                vArgs.push_back("/home/vince/Repos/BullScript/BullScript_CPP_Compiler/Basm/new.basm");
             } else {
                 
             }
@@ -58,7 +61,8 @@ int main(int argc, char *argv[]) {
     if(vArgs.at(1).at(0) != '/') {
         vArgs.at(1) = std::string(std::filesystem::current_path()) + "/" + vArgs.at(1);
     }
-    basm::compileFromFile(vArgs.at(1));
+    // basm::compileFromFile(vArgs.at(1));
+    nBasm::compileFromString(util::fileToString(vArgs.at(1)));
 
     return 0;
 }

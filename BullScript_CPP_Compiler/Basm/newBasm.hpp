@@ -5,6 +5,8 @@
 #include <vector>
 #include <unordered_map>
 
+#include "../Util/util.hpp"
+
 class nBasm {
 public:
 	
@@ -25,5 +27,10 @@ public:
 private:
 	static std::unordered_map<std::string,rawBrick> mRawBricks;
 
-	static void buildRawBricks(std::string sSource);
+	static void
+		buildRawBricks(std::string& sSource),
+		// NOTE: prioritize using this function over unspecifiedError
+		error(util::int2d iLines, std::string sMessage, std::string sSolution),
+		// NOTE: avoid using this function, maybe will be removed if not used
+		unspecifiedError(std::string sMessage, std::string sSolution);
 };

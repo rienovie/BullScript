@@ -5,6 +5,7 @@ std::string logClass::sOutputFile;
 std::ofstream logClass::outFile;
 logOptsStruct logClass::Options;
 bool logClass::bInitialized = false;
+std::stack<std::pair<std::string,std::string>> logClass::workStack;
 
 void logClass::initialize() {
     int iFileCount = 0;

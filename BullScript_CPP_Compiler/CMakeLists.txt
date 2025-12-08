@@ -9,7 +9,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SQLite3 REQUIRED)
 
-set(SOURCES main.cpp Util/util.cpp Basm/basmCompiler.cpp logger.cpp)
+file(GLOB_RECURSE SOURCES "*.cpp")
+
+list(FILTER SOURCES EXCLUDE REGEX "(playground|build)")
 
 add_executable(bull_cpp ${SOURCES})
 
