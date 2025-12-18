@@ -20,6 +20,8 @@ public:
 		std::vector<std::string> vAtrributes;
 		// int is the line number
 		std::vector<std::pair<int, std::string>> vContents;
+
+		void clear();
 	};
 
 	static void compileFromString(std::string sSource);
@@ -32,5 +34,6 @@ private:
 		// NOTE: prioritize using this function over unspecifiedError
 		error(util::int2d iLines, std::string sMessage, std::string sSolution),
 		// NOTE: avoid using this function, maybe will be removed if not used
-		unspecifiedError(std::string sMessage, std::string sSolution);
+		unspecifiedError(std::string sMessage, std::string sSolution),
+		parseRawCreateLine(std::string& sLine, std::string& sBuild, rawBrick& curBrick);
 };

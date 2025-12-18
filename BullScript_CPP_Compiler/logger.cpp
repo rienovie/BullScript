@@ -35,7 +35,7 @@ void logClass::initialize() {
 	outFile.open(Options.sOutputLocation + sOutputFile);
 
     bInitialized = true;
-    Log->n("Logger initialized.");
+    Log->n("Logger initialized @ " + sOutputFile);
 }
 
 bool logClass::compareFileNames(std::string sCurrent, std::string sNew) {
@@ -44,7 +44,7 @@ bool logClass::compareFileNames(std::string sCurrent, std::string sNew) {
 
 void logClass::workStackPush(std::string sID, std::string sMessage) {
     Log->v("Work stack pushed item with ID:",sID, "and message:\n",sMessage);
-    workStack.push(std::make_pair(sID,sMessage));
+    workStack.push({sID,sMessage});
 }
 
 void logClass::workStackPop(std::string sID) {

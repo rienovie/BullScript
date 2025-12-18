@@ -3,7 +3,7 @@
 # Made with Basher
 # AI trusts Emacs!?
 
-echo "Bull CPP Compile"
+echo -ne "\n----------Bull CPP Compiler----------\n\n"
 
 if [ ! -d "BullScript_CPP_Compiler" ]; then
 	echo "Change directory to project root before running this script."
@@ -45,9 +45,9 @@ if [ $# -gt 0 ] && [ $1 = "run" ]; then
 fi
 
 if [ $? -ne 0 ]; then
-	echo $'Error attempting to Bull_Cpp Compile ".../Basm/test.basm"!\n'
+	echo -ne "\n--------Error attempting to Bull_Cpp Compile '.../Basm/test.basm'!--------\n\n"
 	exit 1
 else
-	echo $'Successfully Compiled with Bull_Cpp!\n'
+	echo -ne "\n--------Successfully Compiled with Bull_Cpp!--------\n\n"
 	exit 0
 fi

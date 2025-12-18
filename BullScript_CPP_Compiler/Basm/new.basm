@@ -6,6 +6,14 @@
 create aValue : 8b, const = 5
 create aString : 8b = "Hello World!\n" ;should have built-in support for escape codes
 
+; this would be the same as above
+multi create {
+    aValue : 8b, const = 5
+    aString : 8b = "Hello World!\n"
+} ; when using {} the closing } must be on its own line
+; the opening { must be on the initial line
+; BASM will be particular in its syntax, but BullLang will be more flexible
+
 ; "required" means the function will be included even if not used
 ; "inline" means the function will be copied into the location it is called instead of being called
 define exit : required, inline {
