@@ -24,16 +24,14 @@ void nBasm::buildRawBricks(std::string& sSource) {
 
   std::string
     sCurLine,
-    sMultiInstruction,
     sBuild;
-  int iLineNumber = 0;
+  int
+    iLineNumber = 0,
+    iCurIndent = 0;
   char curChar;
 
   bool
-    // NOTE: another way I could handle "multi" would be multiple passes through the code and just inserting the instruction on each line prior to compilation
-    // I don't want to do this because there will be multiple layers (BullLang, BullScript) compiling down to BASM and each layer could add multiple steps, so each pass thru this code, would become a greater compliation time
-    // By handling this in one pass, it makes the compiler code more complex, but would be a stronger foundation to build upon
-    bMultiInstruction = false,
+    bMultiCreate = false,
     bBrickStarted = false,
     bCommentLine = false,
     bBrickEnded = true;
@@ -46,6 +44,7 @@ void nBasm::buildRawBricks(std::string& sSource) {
 
     // foreach char in line
     for(int i = 0; i < sCurLine.length(); i++) {
+      // also used for ignoring the rest of the line
       if(bCommentLine) { continue; }
 
       curChar = sCurLine[i];
@@ -68,42 +67,64 @@ void nBasm::buildRawBricks(std::string& sSource) {
             bBrickStarted = true;
             bBrickEnded = false;
             sBuild.clear();
-          } else if(sBuild == "multi") {
-            bMultiInstruction = true;
-            bBrickStarted = true;
-            bBrickEnded = false;
-            sBuild.clear();
           } else {
-            error({iLineNumber,iLineNumber}, "Unknown keyword '" + sBuild + "'", "Use 'create' - 'define' - 'multi' ");
+            error({iLineNumber,iLineNumber}, "Unknown keyword '" + sBuild + "'" + "\n\n" + sLine + "\n\n", "Use 'create' or 'define'");
           }
         } else {
           sBuild.push_back(curChar);
         }
       } else {
-        if(bMultiInstruction) {
-          if(sMultiInstruction.length() > 0) {
-            if(curChar == '}') {
-              bBrickEnded = true;
-              bBrickStarted = false;
-              bMultiInstruction = false;
-              sMultiInstruction.clear();
-              sBuild.clear();
+        if(bMultiCreate) {
+          if(curChar == '}') {
+            bBrickEnded = true;
+            bBrickStarted = false;
+            bMultiCreate = false;
+            sBuild.clear();
+            bCommentLine = true;
+          } else {
+            curBrick.iLineNumber = iLineNumber;
+            parseRawCreateLine(sLine, sBuild, curBrick);
+            sBuild.clear();
+            bCommentLine = true;
+          }
+        } else if(curBrick.bCreate) {
+            if(util::contains(sBuild,'{')) {
+              bMultiCreate = true;
               bCommentLine = true;
             } else {
               curBrick.iLineNumber = iLineNumber;
+              sBuild.clear();
               parseRawCreateLine(sLine, sBuild, curBrick);
+              bBrickEnded = true;
+              bBrickStarted = false;
               sBuild.clear();
               bCommentLine = true;
             }
-          } else if((curChar == ' ' || curChar == '{') && sBuild.length() > 0) {
-            curBrick.bCreate = (sBuild == "create");
-            sMultiInstruction = sBuild;
-            sBuild.clear();
+        // if length of name is 0, then we're in a define
+        } else if(curBrick.sName.length() > 0) {
+          if(curChar == '}') {
+            iCurIndent--;
+            if(iCurIndent < 0) {
+              error({iLineNumber,iLineNumber}, "Unexpected '}'", "Expected indentation to decrease");
+            } else if(iCurIndent == 0) {
+              bBrickEnded = true;
+              bBrickStarted = false;
+              sBuild.clear();
+              bCommentLine = true;
+            }
+          } else if(curChar == '{') {
+            iCurIndent++;
           } else {
             sBuild.push_back(curChar);
           }
+        } else {
+          parseRawDefineInitLine(sLine, sBuild, curBrick);
         }
 
+      }
+      if(sBuild.length() > 0) {
+        curBrick.vContents.push_back({curBrick.iLineNumber,sBuild});
+        sBuild.clear();
       }
     }
   }
@@ -113,6 +134,12 @@ void nBasm::buildRawBricks(std::string& sSource) {
   Log->workStackPop("buildRawBricks");
 }
 
+// TODO: this function
+void nBasm::parseRawDefineInitLine(std::string& sLine, std::string& sBuild, nBasm::rawBrick& curBrick) {
+
+}
+
+// TODO: this function
 void nBasm::parseRawCreateLine(std::string& sLine, std::string& sBuild, nBasm::rawBrick& curBrick) {
   sBuild.clear();
   bool bInValueSection = false;
@@ -160,8 +187,11 @@ void nBasm::rawBrick::clear() {
 }
 
 void nBasm::error(util::int2d iLines, std::string sMessage, std::string sSolution) {
-  Log->e("BASM Error on line(s)",iLines.x,"-",iLines.y,"!\n",sMessage,"\nPossible solution:\n",sSolution,"\n");
-
+  if(iLines.x == iLines.y) {
+    Log->e("BASM Error on line",iLines.x,"!\n",sMessage,"\nPossible solution:\n",sSolution,"\n");
+  } else {
+    Log->e("BASM Error on line(s)",iLines.x,"-",iLines.y,"!\n",sMessage,"\nPossible solution:\n",sSolution,"\n");
+  }
   // TODO: add with Log->v current values of variables
 
   throw nullptr;

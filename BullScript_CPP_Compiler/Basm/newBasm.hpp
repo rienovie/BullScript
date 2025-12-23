@@ -35,5 +35,6 @@ private:
 		error(util::int2d iLines, std::string sMessage, std::string sSolution),
 		// NOTE: avoid using this function, maybe will be removed if not used
 		unspecifiedError(std::string sMessage, std::string sSolution),
+		parseRawDefineInitLine(std::string& sLine, std::string& sBuild, rawBrick& curBrick),
 		parseRawCreateLine(std::string& sLine, std::string& sBuild, rawBrick& curBrick);
 };
