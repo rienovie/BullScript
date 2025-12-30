@@ -15,6 +15,7 @@ void nBasm::compileFromString(std::string sSource) {
   }
 }
 
+// TODO: redo this function to use switch statements and states
 void nBasm::buildRawBricks(std::string& sSource) {
   Log->workStackPush("buildRawBricks", "Building raw bricks from string input");
 
@@ -105,18 +106,19 @@ void nBasm::buildRawBricks(std::string& sSource) {
           if(curChar == '}') {
             iCurIndent--;
             if(iCurIndent < 0) {
-              error({iLineNumber,iLineNumber}, "Unexpected '}'", "Expected indentation to decrease");
+              error({iLineNumber,iLineNumber}, "Too many '}'", "Verify '}' count");
             } else if(iCurIndent == 0) {
               bBrickEnded = true;
               bBrickStarted = false;
+              mRawBricks[curBrick.sName] = curBrick;
+              curBrick.clear();
               sBuild.clear();
               bCommentLine = true;
             }
           } else if(curChar == '{') {
             iCurIndent++;
-          } else {
-            sBuild.push_back(curChar);
           }
+          sBuild.push_back(curChar);
         } else {
           parseRawDefineInitLine(sLine, sBuild, curBrick);
         }
@@ -136,6 +138,95 @@ void nBasm::buildRawBricks(std::string& sSource) {
 
 // TODO: this function
 void nBasm::parseRawDefineInitLine(std::string& sLine, std::string& sBuild, nBasm::rawBrick& curBrick) {
+  enum defineState {
+    notDetermined,
+    name,
+    arguments,
+    attributes,
+    end
+  };
+
+  defineState curState = name;
+
+  sBuild.clear();
+
+  // foreach char in line
+  for(int i = 0; i < sLine.length(); i++) {
+    switch(curState) {
+      case name:
+        if(sBuild.length() > 0 && sBuild != "define") {
+          curBrick.sName = sBuild;
+          sBuild.clear();
+          switch(sLine[i]) {
+            case ' ':
+              curState = notDetermined;
+              break;
+            case ':':
+              curState = attributes;
+              break;
+            case '(':
+              curState = arguments;
+              break;
+            case '{':
+              curState = end;
+              break;
+            default:
+              error({curBrick.iLineNumber,curBrick.iLineNumber}, "Compiler error, define function not started.", "Verify define line");
+              break;
+          }
+        } else {
+          sBuild.push_back(sLine[i]);
+        }
+        break;
+      case arguments:
+        switch(sLine[i]) {
+          case ' ' | ',':
+            if(sBuild.length() > 0) {
+              curBrick.vInputs.push_back(sBuild);
+              sBuild.clear();
+            }
+            break;
+          case ')':
+            if(sBuild.length() > 0) {
+              curBrick.vInputs.push_back(sBuild);
+              sBuild.clear();
+            }
+            curState = notDetermined;
+            break;
+          default:
+            sBuild.push_back(sLine[i]);
+            break;
+
+        }
+        break;
+      case attributes:
+        switch(sLine[i]) {
+          case ' ' | ',':
+            if(sBuild.length() > 0) {
+              curBrick.vAtrributes.push_back(sBuild);
+              sBuild.clear();
+            }
+            break;
+          case '{':
+            if(sBuild.length() > 0) {
+              curBrick.vAtrributes.push_back(sBuild);
+              sBuild.clear();
+            }
+            curState = end;
+            break;
+        }
+        break;
+      case end:
+        break;
+      case notDetermined:
+          break;
+    }
+  }
+
+  if(sBuild.length() > 0) {
+    // TODO: handle later
+    error({curBrick.iLineNumber,curBrick.iLineNumber}, "Compiler error, define function not completed.", "Verify define line");
+  }
 
 }
 
